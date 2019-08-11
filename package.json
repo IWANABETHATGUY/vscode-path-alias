@@ -10,14 +10,17 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:extension.sayHello"
+        "onLanguage:javascript",
+        "onLanguage:vue"
     ],
     "main": "./out/extension",
     "contributes": {
-        "commands": [{
-            "command": "extension.sayHello",
-            "title": "Hello World"
-        }]
+        "commands": [
+            {
+                "command": "extension.sayHello",
+                "title": "Hello World"
+            }
+        ]
     },
     "scripts": {
         "vscode:prepublish": "yarn run compile",
