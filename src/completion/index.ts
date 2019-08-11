@@ -6,7 +6,8 @@ import {
   CompletionList,
   CompletionItem,
   CompletionContext,
-  TextDocument
+  TextDocument,
+  CompletionItemKind
 } from 'vscode';
 import { AliasMap, StatInfo } from './type';
 import { existsSync, statSync, readdirSync } from 'fs';
@@ -51,7 +52,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
           .split('/')
           .slice(1)
           .filter(Boolean);
-        const nextChildren = splitPath.reduce((pre: StatInfo | null, cur) => {
+        const lastPath = splitPath.reduce((pre: StatInfo | null, cur) => {
           if (isObject(pre)) {
             pre = pre.children[cur];
             return pre;
@@ -59,10 +60,18 @@ export class PathAliasCompletion implements CompletionItemProvider {
           return null;
         }, statInfo);
 
-        if (nextChildren) {
-          completionList.push(
-            ...Object.keys(nextChildren.children).map(val => ({ label: val }))
-          );
+        if (lastPath) {
+          const children = lastPath.children;
+          const retCompletionList = Object.keys(children).map(key => {
+            const curStatInfo = children[key];
+            const completionItem = new CompletionItem(key);
+            completionItem.kind =
+              curStatInfo.type === 'directory'
+                ? CompletionItemKind.Folder
+                : CompletionItemKind.File;
+            return completionItem;
+          });
+          completionList.push(...retCompletionList);
         }
       }
     }

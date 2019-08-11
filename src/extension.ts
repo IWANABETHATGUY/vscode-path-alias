@@ -27,11 +27,6 @@ export function activate(context: ExtensionContext) {
         { language: 'vue', scheme: 'file' }
       ],
       new PathAliasCompletion({ '@': absolutePath || '' }),
-      'a',
-      'b',
-      'c',
-      'd',
-      '.',
       '/'
     )
   );
