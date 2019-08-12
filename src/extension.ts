@@ -9,9 +9,6 @@ import {
 import { PathAliasCompletion } from './completion/index';
 import { resolve } from 'path';
 
-const triggerWord = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM'.split(
-  ''
-);
 export function activate(context: ExtensionContext) {
   console.log('Congratulations, your extension "path-alias" is now active!');
 
