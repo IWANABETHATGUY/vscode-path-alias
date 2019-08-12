@@ -7,14 +7,19 @@ import {
   CompletionItem,
   CompletionContext,
   TextDocument,
-  CompletionItemKind
+  CompletionItemKind,
+  Disposable
 } from 'vscode';
 import { AliasMap, StatInfo } from './type';
 import { existsSync, statSync, readdirSync } from 'fs';
 
 export class PathAliasCompletion implements CompletionItemProvider {
   private _statMap: { [alias: string]: StatInfo } = {};
+  private _disposable: Disposable;
   constructor(aliasMap: AliasMap) {
+    let subscriptions: Disposable[] = [];
+    this._disposable = Disposable.from(...subscriptions);
+    
     Object.keys(aliasMap).forEach(alias => {
       const realPath = aliasMap[alias];
       let isLegal = true;
@@ -34,6 +39,9 @@ export class PathAliasCompletion implements CompletionItemProvider {
     });
   }
 
+  dispose() {
+    this._disposable.dispose()
+  }
   async provideCompletionItems(
     document: TextDocument,
     position: Position,
