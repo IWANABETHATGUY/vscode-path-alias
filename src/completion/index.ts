@@ -10,16 +10,17 @@ import {
   Disposable
 } from 'vscode';
 import { StatInfo, AliasStatTree } from './type';
-import { isObject } from '../util/common';
+import { isObject, mostLikeAlias } from '../util/common';
 
 export class PathAliasCompletion implements CompletionItemProvider {
-  
+  private _aliasList: string[] = [];  
   private _statMap: AliasStatTree;
   private _disposable: Disposable;
   constructor(statMap: AliasStatTree) {
     let subscriptions: Disposable[] = [];
     this._disposable = Disposable.from(...subscriptions);
     this._statMap = statMap;
+        this._aliasList = Object.keys(this._statMap).sort();
     
   }
 
@@ -38,8 +39,10 @@ export class PathAliasCompletion implements CompletionItemProvider {
     if (range) {
       const inputPath = document.getText(range);
       const resPath = inputPath.slice(1, -1);
-      if (resPath.startsWith('@')) {
-        let statInfo: StatInfo = this._statMap['@'];
+      const mostLike = mostLikeAlias(this._aliasList, resPath);
+
+      if (mostLike) {
+        let statInfo: StatInfo = this._statMap[mostLike];
         let splitPath = resPath
           .split('/')
           .slice(1)

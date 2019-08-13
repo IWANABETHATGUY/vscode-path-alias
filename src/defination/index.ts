@@ -10,7 +10,7 @@ import {
   Uri
 } from 'vscode';
 import { AliasStatTree, StatInfo } from '../completion/type';
-import { isObject } from '../util/common';
+import { isObject, mostLikeAlias } from '../util/common';
 export class PathAliasDefinition implements DefinitionProvider {
   private _statMap: AliasStatTree;
   private _disposable: Disposable;
@@ -55,15 +55,4 @@ export class PathAliasDefinition implements DefinitionProvider {
     }
     return null;
   }
-}
-
-
-function mostLikeAlias(aliasList: string[], path: string) : string{
-  let index = -1;
-  aliasList.forEach((curAlias, i) => {
-    if (path.startsWith(curAlias)) {
-      index = i;
-    }
-  })
-  return index !== -1 ? aliasList[index] : '';
 }

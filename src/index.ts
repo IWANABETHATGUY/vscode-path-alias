@@ -7,6 +7,7 @@ import * as path from 'path';
 export class PathAlias {
   private _ctx: ExtensionContext;
   private _statMap: AliasStatTree = {};
+  private _aliasMap: AliasMap = {};
   constructor(ctx: ExtensionContext) {
     this._ctx = ctx;
     this.init();
@@ -19,9 +20,10 @@ export class PathAlias {
   }
 
   private initStatInfo() {
-    const aliasMap: AliasMap = { '@': workspace.rootPath || '' };
-    Object.keys(aliasMap).forEach(alias => {
-      const realPath = aliasMap[alias];
+     this._aliasMap= workspace.getConfiguration('pathAlias').get('aliasMap') || {};
+     
+    Object.keys(this._aliasMap).forEach(alias => {
+      const realPath = this._aliasMap[alias].replace('${cwd}', workspace.rootPath || '')
       let isLegal = true;
       if (isLegal && !existsSync(realPath)) {
         console.warn(`${realPath} does not exist`);
@@ -37,6 +39,7 @@ export class PathAlias {
         this._statMap[alias] = aliasStatInfo(alias, realPath);
       }
     });
+    console.log(this)
   }
   private initCompletion() {
     this._ctx.subscriptions.push(
