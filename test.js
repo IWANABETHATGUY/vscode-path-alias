@@ -1,6 +1,3 @@
-const path = require('path');
-const fs = require('fs');
+const a = [ '@com', '@components', '@'];
 
-let a = [];
-a.push([1]);
-console.log(a);
+console.log(a.sort());
