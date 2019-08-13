@@ -13,19 +13,18 @@ import { StatInfo, AliasStatTree } from './type';
 import { isObject, mostLikeAlias } from '../util/common';
 
 export class PathAliasCompletion implements CompletionItemProvider {
-  private _aliasList: string[] = [];  
+  private _aliasList: string[] = [];
   private _statMap: AliasStatTree;
   private _disposable: Disposable;
   constructor(statMap: AliasStatTree) {
     let subscriptions: Disposable[] = [];
     this._disposable = Disposable.from(...subscriptions);
     this._statMap = statMap;
-        this._aliasList = Object.keys(this._statMap).sort();
-    
+    this._aliasList = Object.keys(this._statMap).sort();
   }
 
   dispose() {
-    this._disposable.dispose()
+    this._disposable.dispose();
   }
   async provideCompletionItems(
     document: TextDocument,
@@ -74,5 +73,3 @@ export class PathAliasCompletion implements CompletionItemProvider {
     return completionList;
   }
 }
-
-
