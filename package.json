@@ -20,7 +20,16 @@
                 "command": "extension.sayHello",
                 "title": "Hello World"
             }
-        ]
+        ],
+        "configuration": {
+            "title": "pathAlias",
+            "properties": {
+                "pathAlias.aliasMap": {
+                    "type": "object",
+                    "description": "在这个对象中定制path-alias的规则,你可以使用${cwd}代表当前工作目录的绝对路径"
+                }
+            }
+        }
     },
     "scripts": {
         "vscode:prepublish": "yarn run compile",
