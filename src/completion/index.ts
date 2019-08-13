@@ -1,4 +1,3 @@
-import * as path from 'path';
 import {
   CompletionItemProvider,
   Position,
@@ -10,33 +9,18 @@ import {
   CompletionItemKind,
   Disposable
 } from 'vscode';
-import { AliasMap, StatInfo } from './type';
-import { existsSync, statSync, readdirSync } from 'fs';
+import { StatInfo, AliasStatTree } from './type';
+import { isObject } from '../util/common';
 
 export class PathAliasCompletion implements CompletionItemProvider {
-  private _statMap: { [alias: string]: StatInfo } = {};
+  
+  private _statMap: AliasStatTree;
   private _disposable: Disposable;
-  constructor(aliasMap: AliasMap) {
+  constructor(statMap: AliasStatTree) {
     let subscriptions: Disposable[] = [];
     this._disposable = Disposable.from(...subscriptions);
+    this._statMap = statMap;
     
-    Object.keys(aliasMap).forEach(alias => {
-      const realPath = aliasMap[alias];
-      let isLegal = true;
-      if (isLegal && !existsSync(realPath)) {
-        console.warn(`${realPath} does not exist`);
-        isLegal = false;
-      } else if (isLegal && !path.isAbsolute(realPath)) {
-        console.warn(`${realPath} is not a absolutePath`);
-        isLegal = false;
-      } else if (isLegal && !statSync(realPath).isDirectory()) {
-        console.warn(`${realPath} is not a directory`);
-        isLegal = false;
-      }
-      if (isLegal) {
-        this._statMap[alias] = aliasStatInfo(alias, realPath);
-      }
-    });
   }
 
   dispose() {
@@ -88,48 +72,4 @@ export class PathAliasCompletion implements CompletionItemProvider {
   }
 }
 
-function aliasStatInfo(alias: string, realPath: string): StatInfo {
-  const stat: StatInfo = {
-    name: alias,
-    type: 'directory',
-    absolutePath: realPath,
-    children: Object.create(null)
-  };
-  stat['children'] = readdirSync(realPath).reduce((pre, currentPath) => {
-    if (currentPath !== 'node_modules') {
-      const absolutePath = path.resolve(realPath, currentPath);
-      pre[currentPath] = getStatInfo(currentPath, absolutePath);
-    }
-    return pre;
-  }, stat.children);
-  return stat;
-}
 
-function getStatInfo(name: string, absolutePath: string): StatInfo {
-  const resStatInfo: StatInfo = {
-    name,
-    absolutePath,
-    type: 'file',
-    children: Object.create(null)
-  };
-  if (statSync(absolutePath).isDirectory()) {
-    resStatInfo['children'] = readdirSync(absolutePath).reduce(
-      (pre, curName) => {
-        if (curName !== 'node_modules') {
-          pre[curName] = getStatInfo(
-            curName,
-            path.resolve(absolutePath, curName)
-          );
-        }
-        return pre;
-      },
-      resStatInfo.children
-    );
-    resStatInfo['type'] = 'directory';
-  }
-  return resStatInfo;
-}
-
-function isObject(obj: any): obj is StatInfo {
-  return Object.prototype.toString.call(obj) === '[object Object]';
-}

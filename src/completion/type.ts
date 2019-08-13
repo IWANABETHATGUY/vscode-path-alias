@@ -8,3 +8,7 @@ export interface StatInfo {
   name: string;
   absolutePath: string;
 }
+
+export interface AliasStatTree {
+  [alias: string]: StatInfo;
+}
