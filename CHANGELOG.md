@@ -1,7 +1,7 @@
 # Change Log
-All notable changes to the "path-alias" extension will be documented in this file.
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [Unreleased]
-- Initial release
+- 0.1.0(2019-08-13)
+  - 支持配置自己的alias
+  - 支持带有alias的路径提示
+  - 支持带有alias的路径跳转

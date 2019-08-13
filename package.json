@@ -14,6 +14,7 @@
         "onLanguage:vue"
     ],
     "main": "./out/extension",
+    "readme": "https://github.com/IWANABETHATGUY/vscode-path-alias/blob/master/README.md",
     "contributes": {
         "commands": [
             {
@@ -44,5 +45,10 @@
         "tslint": "^5.8.0",
         "@types/node": "^8.10.25",
         "@types/mocha": "^2.2.42"
-    }
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/IWANABETHATGUY/vscode-path-alias"
+    },
+    "homepage": "https://github.com/IWANABETHATGUY/vscode-path-alias/blob/master/README.md"
 }
