@@ -8,7 +8,7 @@ export function isObject(obj: any): obj is StatInfo {
 export function mostLikeAlias(aliasList: string[], path: string) : string{
   let index = -1;
   aliasList.forEach((curAlias, i) => {
-    if (path.startsWith(curAlias)) {
+    if (path === curAlias) {
       index = i;
     }
   })
