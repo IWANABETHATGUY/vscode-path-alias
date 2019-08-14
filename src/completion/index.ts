@@ -14,15 +14,17 @@ import { isObject, mostLikeAlias } from '../util/common';
 
 export class PathAliasCompletion implements CompletionItemProvider {
   private _aliasList: string[] = [];
-  private _statMap: AliasStatTree;
+  private _statMap!: AliasStatTree;
   private _disposable: Disposable;
   constructor(statMap: AliasStatTree) {
     let subscriptions: Disposable[] = [];
     this._disposable = Disposable.from(...subscriptions);
+    this.setStatMap(statMap);
+  }
+  setStatMap(statMap: AliasStatTree) {
     this._statMap = statMap;
     this._aliasList = Object.keys(this._statMap).sort();
   }
-
   dispose() {
     this._disposable.dispose();
   }
@@ -38,7 +40,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
     if (range) {
       const inputPath = document.getText(range);
       const resPath = inputPath.slice(1, -1);
-      const mostLike = mostLikeAlias(this._aliasList, resPath);
+      const mostLike = mostLikeAlias(this._aliasList, resPath.split('/')[0]);
 
       if (mostLike) {
         let statInfo: StatInfo = this._statMap[mostLike];

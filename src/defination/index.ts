@@ -12,17 +12,20 @@ import {
 import { AliasStatTree, StatInfo } from '../completion/type';
 import { isObject, mostLikeAlias } from '../util/common';
 export class PathAliasDefinition implements DefinitionProvider {
-  private _statMap: AliasStatTree;
+  private _statMap!: AliasStatTree;
   private _disposable: Disposable;
   private _aliasList: string[] = [];
   constructor(statMap: AliasStatTree) {
     let subscriptions: Disposable[] = [];
     this._disposable = Disposable.from(...subscriptions);
-    this._statMap = statMap;
-    this._aliasList = Object.keys(this._statMap).sort();
+    this.setStatMap(statMap);
   }
   dispose() {
     this._disposable.dispose();
+  }
+  setStatMap(statMap: AliasStatTree) {
+    this._statMap = statMap;
+    this._aliasList = Object.keys(this._statMap).sort();
   }
   provideDefinition(
     document: TextDocument,
@@ -34,7 +37,8 @@ export class PathAliasDefinition implements DefinitionProvider {
     if (range) {
       const inputPath = document.getText(range);
       const resPath = inputPath.slice(1, -1);
-      const mostLike = mostLikeAlias(this._aliasList, resPath);
+      const mostLike = mostLikeAlias(this._aliasList, resPath.split('/')[0]);
+
       if (mostLike) {
         let statInfo: StatInfo = this._statMap[mostLike];
         let splitPath = resPath

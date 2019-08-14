@@ -8,9 +8,19 @@ export class PathAlias {
   private _ctx: ExtensionContext;
   private _statMap: AliasStatTree = {};
   private _aliasMap: AliasMap = {};
+  private _completion!: PathAliasCompletion ;
+  private _defination!: PathAliasDefinition;
   constructor(ctx: ExtensionContext) {
     this._ctx = ctx;
     this.init();
+    
+    workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration('pathAlias.aliasMap')) {
+        this.initStatInfo()
+        this._completion.setStatMap(this._statMap);
+        this._defination.setStatMap(this._statMap);
+      }
+    });
   }
 
   private init() {
@@ -20,10 +30,14 @@ export class PathAlias {
   }
 
   private initStatInfo() {
-     this._aliasMap= workspace.getConfiguration('pathAlias').get('aliasMap') || {};
-     
+    this._aliasMap =
+      workspace.getConfiguration('pathAlias').get('aliasMap') || {};
+
     Object.keys(this._aliasMap).forEach(alias => {
-      const realPath = this._aliasMap[alias].replace('${cwd}', workspace.rootPath || '')
+      const realPath = this._aliasMap[alias].replace(
+        '${cwd}',
+        workspace.rootPath || ''
+      );
       let isLegal = true;
       if (isLegal && !existsSync(realPath)) {
         console.warn(`${realPath} does not exist`);
@@ -39,29 +53,34 @@ export class PathAlias {
         this._statMap[alias] = aliasStatInfo(alias, realPath);
       }
     });
-    console.log(this)
   }
   private initCompletion() {
+    this._completion = 
+        new PathAliasCompletion(this._statMap);
+
     this._ctx.subscriptions.push(
       languages.registerCompletionItemProvider(
         [
           { language: 'javascript', scheme: 'file' },
           { language: 'vue', scheme: 'file' }
         ],
-        new PathAliasCompletion(this._statMap),
+        this._completion,
         '/'
       )
     );
   }
 
   private initDefinition() {
+    this._defination = 
+        new PathAliasDefinition(this._statMap);
+
     this._ctx.subscriptions.push(
       languages.registerDefinitionProvider(
         [
           { language: 'javascript', scheme: 'file' },
           { language: 'vue', scheme: 'file' }
         ],
-        new PathAliasDefinition(this._statMap)
+        this._defination
       )
     );
   }
@@ -108,4 +127,3 @@ function getStatInfo(name: string, absolutePath: string): StatInfo {
   }
   return resStatInfo;
 }
-
