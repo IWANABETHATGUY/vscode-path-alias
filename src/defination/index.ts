@@ -11,6 +11,8 @@ import {
 } from 'vscode';
 import { AliasStatTree, StatInfo } from '../completion/type';
 import { isObject, mostLikeAlias } from '../util/common';
+import { resolve, extname } from 'path';
+import { existsSync } from 'fs';
 export class PathAliasDefinition implements DefinitionProvider {
   private _statMap!: AliasStatTree;
   private _disposable: Disposable;
@@ -45,15 +47,63 @@ export class PathAliasDefinition implements DefinitionProvider {
           .split('/')
           .slice(1)
           .filter(Boolean);
-        const lastPath = splitPath.reduce((pre: StatInfo | null, cur) => {
-          if (isObject(pre)) {
-            pre = pre.children[cur];
-            return pre;
+        const lastStatInfo = splitPath
+          .slice(0, -1)
+          .reduce((pre: StatInfo | null, cur) => {
+            if (isObject(pre)) {
+              pre = pre.children[cur];
+              return pre;
+            }
+            return null;
+          }, statInfo);
+        const currentDocumentExt = extname(document.uri.path);
+
+        if (lastStatInfo) {
+          let lastPath = lastStatInfo.children[splitPath[splitPath.length - 1]];
+          if (lastPath) {
+            if (lastPath.type === 'file') {
+              return new Location(
+                Uri.file(lastPath.absolutePath),
+                new Position(0, 0)
+              );
+            } else {
+              const currentFileIndexPath = resolve(
+                lastPath.absolutePath,
+                `index.${currentDocumentExt}`
+              );
+              const currentFileIndexJsPath = resolve(
+                lastPath.absolutePath,
+                `index.js`
+              );
+              if (existsSync(currentFileIndexPath)) {
+                return new Location(
+                  Uri.file(currentFileIndexPath),
+                  new Position(0, 0)
+                );
+              } else if (existsSync(currentFileIndexJsPath)) {
+                return new Location(
+                  Uri.file(currentFileIndexJsPath),
+                  new Position(0, 0)
+                );
+              }
+            }
+          } else {
+            const lastPathDir = lastStatInfo.absolutePath;
+            const lastPathString = splitPath[splitPath.length - 1];
+            const lastPathPrefix =resolve(lastPathDir, lastPathString) ;
+            const currentDocumentTypePath =
+               lastPathPrefix+ currentDocumentExt;
+            const JsTypePath = lastPathPrefix + '.js';
+            if (existsSync(currentDocumentTypePath)) {
+              return new Location(
+                Uri.file(currentDocumentTypePath),
+                new Position(0, 0)
+              );
+            } else if (existsSync(JsTypePath)) {
+              return new Location(Uri.file(JsTypePath), new Position(0, 0));
+            }
+            return null;
           }
-          return null;
-        }, statInfo);
-        if (lastPath && lastPath.type === 'file') {
-          return new Location(Uri.file(lastPath.absolutePath), new Position(0, 0));
         }
       }
     }
