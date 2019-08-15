@@ -16,12 +16,13 @@ export class PathAlias {
   private _aliasMap: AliasMap = {};
   private _completion!: PathAliasCompletion;
   private _defination!: PathAliasDefinition;
-  private _fileWatcher: chokidar.FSWatcher | null = null;
+  // private _fileWatcher: chokidar.FSWatcher | null = null;
   constructor(ctx: ExtensionContext) {
     this._ctx = ctx;
     this.init();
     if (workspace.rootPath) {
-      this._fileWatcher = generateWatcher(workspace.rootPath);
+      //TODO:当改变了文件目录时，需要重新初始化
+      generateWatcher(workspace.rootPath);
     }
     workspace.onDidChangeConfiguration(e => {
       if (e.affectsConfiguration('pathAlias.aliasMap')) {
