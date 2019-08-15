@@ -4,21 +4,47 @@ import { PathAliasDefinition } from './defination';
 import { AliasMap, StatInfo, AliasStatTree } from './completion/type';
 import { existsSync, statSync, readdirSync } from 'fs';
 import * as path from 'path';
+import { EventEmitter } from 'events';
+import { debounce } from './util/common';
+import * as chokidar from 'chokidar';
+import { generateWatcher } from './util/watcher';
+export const eventBus = new EventEmitter();
+
 export class PathAlias {
   private _ctx: ExtensionContext;
   private _statMap: AliasStatTree = {};
   private _aliasMap: AliasMap = {};
-  private _completion!: PathAliasCompletion ;
+  private _completion!: PathAliasCompletion;
   private _defination!: PathAliasDefinition;
+  private _fileWatcher: chokidar.FSWatcher | null = null;
   constructor(ctx: ExtensionContext) {
     this._ctx = ctx;
     this.init();
-    
+    if (workspace.rootPath) {
+      this._fileWatcher = generateWatcher(workspace.rootPath);
+    }
     workspace.onDidChangeConfiguration(e => {
       if (e.affectsConfiguration('pathAlias.aliasMap')) {
-        this.initStatInfo()
-        this._completion.setStatMap(this._statMap);
-        this._defination.setStatMap(this._statMap);
+        this.updateStatInfo();
+      }
+    });
+    const handler = debounce(() => {
+      console.log('change');
+      this.updateStatInfo()
+    }, 1000);
+    eventBus.on('file-change', (path)=> {
+      const needToRestart = Object.keys(this._aliasMap)
+        .map(key => {
+          return this._aliasMap[key].replace(
+            '${cwd}',
+            workspace.rootPath || ''
+          );
+        })
+        .some(aliasPath => {
+          return path.startsWith(aliasPath);
+        });
+      if (needToRestart) {
+        handler();
       }
     });
   }
@@ -27,6 +53,12 @@ export class PathAlias {
     this.initStatInfo();
     this.initCompletion();
     this.initDefinition();
+  }
+
+  private updateStatInfo() {
+    this.initStatInfo();
+    this._completion.setStatMap(this._statMap);
+    this._defination.setStatMap(this._statMap);
   }
 
   private initStatInfo() {
@@ -55,8 +87,7 @@ export class PathAlias {
     });
   }
   private initCompletion() {
-    this._completion = 
-        new PathAliasCompletion(this._statMap);
+    this._completion = new PathAliasCompletion(this._statMap);
 
     this._ctx.subscriptions.push(
       languages.registerCompletionItemProvider(
@@ -71,8 +102,7 @@ export class PathAlias {
   }
 
   private initDefinition() {
-    this._defination = 
-        new PathAliasDefinition(this._statMap);
+    this._defination = new PathAliasDefinition(this._statMap);
 
     this._ctx.subscriptions.push(
       languages.registerDefinitionProvider(
