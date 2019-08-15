@@ -14,3 +14,14 @@ export function mostLikeAlias(aliasList: string[], path: string) : string{
   })
   return index !== -1 ? aliasList[index] : '';
 }
+
+
+export function debounce(fn: Function, timeout: number, ctx?: any) {
+  let timer: NodeJS.Timer;
+  return function(...args: any[]) {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      fn.call(ctx, ...args)
+    }, timeout)
+  }
+}
