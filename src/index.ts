@@ -6,7 +6,6 @@ import { existsSync, statSync, readdirSync } from 'fs';
 import * as path from 'path';
 import { EventEmitter } from 'events';
 import { debounce } from './util/common';
-import * as chokidar from 'chokidar';
 import { generateWatcher } from './util/watcher';
 export const eventBus = new EventEmitter();
 
