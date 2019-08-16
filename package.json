@@ -5,7 +5,7 @@
     "version": "0.2.1",
     "publisher": "IWANABETHATGUY",
     "engines": {
-        "vscode": "^1.35.0"
+        "vscode": "^1.30.0"
     },
     "categories": [
         "Other"
