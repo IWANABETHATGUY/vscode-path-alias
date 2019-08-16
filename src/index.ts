@@ -17,6 +17,7 @@ export class PathAlias {
   private _defination!: PathAliasDefinition;
   // private _fileWatcher: chokidar.FSWatcher | null = null;
   constructor(ctx: ExtensionContext) {
+    console.time('init');
     this._ctx = ctx;
     this.init();
     if (workspace.rootPath) {
@@ -47,6 +48,7 @@ export class PathAlias {
         handler();
       }
     });
+    console.timeEnd('init')
   }
 
   private init() {
