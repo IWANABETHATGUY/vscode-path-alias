@@ -10,8 +10,11 @@
     }
     ```
     即可
+    ![config](https://vuethisstore.flatpeach.xyz/path-alias-config.gif)
   - 提供路径别名的输入提示
-  - 提供路径别名的文件跳转(暂时只支持全称)
+    ![completion](https://vuethisstore.flatpeach.xyz/path-alias-completion.gif)
+  - 提供路径别名的文件跳转
+  - ![defination](https://vuethisstore.flatpeach.xyz/path-alias-defination.gif)
   -  路径别名更新后会自动更新相应提示
   - 添加文件和删除文件后会自动更新相应的提示
   - 对于一些路径的简写可以正确跳转
