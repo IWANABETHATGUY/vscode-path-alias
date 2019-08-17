@@ -7,7 +7,8 @@ import {
   CompletionContext,
   TextDocument,
   CompletionItemKind,
-  Disposable
+  Disposable,
+  workspace
 } from 'vscode';
 import { StatInfo, AliasStatTree } from './type';
 import { isObject, mostLikeAlias } from '../util/common';
@@ -16,10 +17,17 @@ export class PathAliasCompletion implements CompletionItemProvider {
   private _aliasList: string[] = [];
   private _statMap!: AliasStatTree;
   private _disposable: Disposable;
+  private _needExtension: boolean = true;
   constructor(statMap: AliasStatTree) {
     let subscriptions: Disposable[] = [];
-    this._disposable = Disposable.from(...subscriptions);
+    this._needExtension  = !!workspace.getConfiguration('pathAlias').get('needExtension');
     this.setStatMap(statMap);
+    workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration('pathAlias.needExtension')) {
+        this._needExtension = !!workspace.getConfiguration('pathAlias').get('needExtension');
+      }
+    })
+    this._disposable = Disposable.from(...subscriptions);
   }
   setStatMap(statMap: AliasStatTree) {
     this._statMap = statMap;
@@ -61,6 +69,9 @@ export class PathAliasCompletion implements CompletionItemProvider {
           const retCompletionList = Object.keys(children).map(key => {
             const curStatInfo = children[key];
             const completionItem = new CompletionItem(key);
+            if (curStatInfo.type === 'file' && !this._needExtension){
+              completionItem.insertText = key.split('.')[0];
+            }
             completionItem.kind =
               curStatInfo.type === 'directory'
                 ? CompletionItemKind.Folder
