@@ -15,7 +15,6 @@ export class PathAlias {
   private _aliasMap: AliasMap = {};
   private _completion!: PathAliasCompletion;
   private _defination!: PathAliasDefinition;
-  // private _fileWatcher: chokidar.FSWatcher | null = null;
   constructor(ctx: ExtensionContext) {
     console.time('init');
     this._ctx = ctx;

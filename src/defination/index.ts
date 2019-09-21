@@ -13,6 +13,7 @@ import { AliasStatTree, StatInfo } from '../completion/type';
 import { isObject, mostLikeAlias } from '../util/common';
 import { resolve, extname } from 'path';
 import { existsSync } from 'fs';
+import { Nullable } from '../util/types';
 export class PathAliasDefinition implements DefinitionProvider {
   private _statMap!: AliasStatTree;
   private _disposable: Disposable;
@@ -49,7 +50,7 @@ export class PathAliasDefinition implements DefinitionProvider {
           .filter(Boolean);
         const lastStatInfo = splitPath
           .slice(0, -1)
-          .reduce((pre: StatInfo | null, cur) => {
+          .reduce((pre: Nullable<StatInfo>, cur) => {
             if (isObject(pre)) {
               pre = pre.children[cur];
               return pre;
