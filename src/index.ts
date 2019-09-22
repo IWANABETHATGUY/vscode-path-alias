@@ -7,6 +7,7 @@ import * as path from 'path';
 import { EventEmitter } from 'events';
 import { debounce } from './util/common';
 import { generateWatcher } from './util/watcher';
+import { PathAliasCodeActionProvider } from './codeAction';
 export const eventBus = new EventEmitter();
 
 export class PathAlias {
@@ -15,6 +16,7 @@ export class PathAlias {
   private _aliasMap: AliasMap = {};
   private _completion!: PathAliasCompletion;
   private _defination!: PathAliasDefinition;
+  private _codeAction!: PathAliasCodeActionProvider;
   constructor(ctx: ExtensionContext) {
     console.time('init');
     this._ctx = ctx;
@@ -30,9 +32,9 @@ export class PathAlias {
     });
     const handler = debounce(() => {
       console.log('change');
-      this.updateStatInfo()
+      this.updateStatInfo();
     }, 1000);
-    eventBus.on('file-change', (path)=> {
+    eventBus.on('file-change', path => {
       const needToRestart = Object.keys(this._aliasMap)
         .map(key => {
           return this._aliasMap[key].replace(
@@ -47,13 +49,14 @@ export class PathAlias {
         handler();
       }
     });
-    console.timeEnd('init')
+    console.timeEnd('init');
   }
 
   private init() {
     this.initStatInfo();
     this.initCompletion();
     this.initDefinition();
+    this.initCodeAction();
   }
 
   private updateStatInfo() {
@@ -86,6 +89,18 @@ export class PathAlias {
         this._statMap[alias] = aliasStatInfo(alias, realPath);
       }
     });
+  }
+  private initCodeAction() {
+    this._codeAction = new PathAliasCodeActionProvider(this._statMap);
+    this._ctx.subscriptions.push(
+      languages.registerCodeActionsProvider(
+        [
+          { language: 'javascript', scheme: 'file' },
+          { language: 'vue', scheme: 'file' }
+        ],
+        this._codeAction
+      )
+    );
   }
   private initCompletion() {
     this._completion = new PathAliasCompletion(this._statMap);

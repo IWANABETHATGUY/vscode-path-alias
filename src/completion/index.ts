@@ -49,7 +49,6 @@ export class PathAliasCompletion implements CompletionItemProvider {
     token: CancellationToken,
     context: CompletionContext
   ): Promise<CompletionItem[] | CompletionList> {
-
     const completionList: CompletionItem[] = [];
     const aliasReg = /\"(.*)\"|\'(.*)\'/;
     const importReg = /import\s*{([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/;
@@ -92,7 +91,9 @@ export class PathAliasCompletion implements CompletionItemProvider {
         }
       }
     } else if (importRange) {
-      const [, importIdentifiers, pathAlias] = importReg.exec(document.getText(importRange))!;
+      const [, importIdentifiers, pathAlias] = importReg.exec(
+        document.getText(importRange)
+      )!;
       const mostLike = mostLikeAlias(this._aliasList, pathAlias.split('/')[0]);
       if (mostLike) {
         const pathList = [
@@ -114,15 +115,20 @@ export class PathAliasCompletion implements CompletionItemProvider {
             encoding: 'utf8'
           });
           // 这里是已经导入的函数或变量
-          const importIdentifierList = importIdentifiers.split(',').filter(Boolean).map(id => id.trim());
+          const importIdentifierList = importIdentifiers
+            .split(',')
+            .filter(Boolean)
+            .map(id => id.trim());
           const exportIdentifierList = traverse(absolutePathWithExtname, file);
-          const retCompletionList = exportIdentifierList.filter(id => importIdentifierList.indexOf(id) === -1).map(id => {
-            const completionItem = new CompletionItem(id);
-            // TODO: 这里需要具体细化是函数还是变量
-            completionItem.sortText = id;
-            completionItem.kind = CompletionItemKind.Function;
-            return completionItem;
-          });
+          const retCompletionList = exportIdentifierList
+            .filter(id => importIdentifierList.indexOf(id) === -1)
+            .map(id => {
+              const completionItem = new CompletionItem(id);
+              // TODO: 这里需要具体细化是函数还是变量
+              completionItem.sortText = `0${id}`;
+              completionItem.kind = CompletionItemKind.Function;
+              return completionItem;
+            });
           completionList.push(...retCompletionList);
         }
       }

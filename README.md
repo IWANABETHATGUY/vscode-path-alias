@@ -20,6 +20,6 @@
   - 对于一些路径的简写可以正确跳转
 
 ## TODO
-- [ ] 提供import提示  
+- [x] 提供import提示  
 - [ ] 提供import跳转  
-- [ ] 提供将相对路径转化为path alias 的重构功能
+- [x] 提供将相对路径转化为path alias 的重构功能
