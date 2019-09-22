@@ -49,8 +49,8 @@
         "@types/chokidar": "^2.1.3",
         "@types/mocha": "^2.2.42",
         "@types/node": "^8.10.25",
+        "@types/typescript": "^2.0.0",
         "tslint": "^5.8.0",
-        "typescript": "^2.6.1",
         "vscode": "^1.1.21"
     },
     "repository": {
@@ -59,6 +59,7 @@
     },
     "homepage": "https://github.com/IWANABETHATGUY/vscode-path-alias/blob/master/README.md",
     "dependencies": {
-        "chokidar": "^3.0.2"
+        "chokidar": "^3.0.2",
+        "typescript": "^3.6.3"
     }
 }
