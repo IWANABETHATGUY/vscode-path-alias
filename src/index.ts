@@ -97,7 +97,9 @@ export class PathAlias {
           { language: 'vue', scheme: 'file' }
         ],
         this._completion,
-        '/'
+        '/',
+        ',',
+        '{'
       )
     );
   }

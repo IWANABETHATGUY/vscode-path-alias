@@ -35,6 +35,13 @@
   resolved "https://registry.npm.taobao.org/@types/node/download/@types/node-8.10.51.tgz?cache=0&sync_timestamp=1565213868223&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40types%2Fnode%2Fdownload%2F%40types%2Fnode-8.10.51.tgz#80600857c0a47a8e8bafc2dae6daed6db58e3627"
   integrity sha1-gGAIV8Ckeo6Lr8La5trtbbWONic=
 
+"@types/typescript@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.npm.taobao.org/@types/typescript/download/@types/typescript-2.0.0.tgz#c433539c98bae28682b307eaa7a0fd2115b83c28"
+  integrity sha1-xDNTnJi64oaCswfqp6D9IRW4PCg=
+  dependencies:
+    typescript "*"
+
 agent-base@4, agent-base@^4.3.0:
   version "4.3.0"
   resolved "https://registry.npm.taobao.org/agent-base/download/agent-base-4.3.0.tgz#8165f01c436009bccad0b1d122f05ed770efc6ee"
@@ -804,10 +811,15 @@ tweetnacl@^0.14.3, tweetnacl@~0.14.0:
   resolved "https://registry.npm.taobao.org/tweetnacl/download/tweetnacl-0.14.5.tgz#5ae68177f192d4456269d108afa93ff8743f4f64"
   integrity sha1-WuaBd/GS1EViadEIr6k/+HQ/T2Q=
 
-typescript@^2.6.1:
-  version "2.9.2"
-  resolved "https://registry.npm.taobao.org/typescript/download/typescript-2.9.2.tgz#1cbf61d05d6b96269244eb6a3bce4bd914e0f00c"
-  integrity sha1-HL9h0F1rliaSROtqO85L2RTg8Aw=
+typescript@*:
+  version "3.6.3"
+  resolved "https://registry.npm.taobao.org/typescript/download/typescript-3.6.3.tgz?cache=0&sync_timestamp=1569046677785&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Ftypescript%2Fdownload%2Ftypescript-3.6.3.tgz#fea942fabb20f7e1ca7164ff626f1a9f3f70b4da"
+  integrity sha1-/qlC+rsg9+HKcWT/Ym8anz9wtNo=
+
+typescript@^3.6.3:
+  version "3.6.3"
+  resolved "https://registry.npm.taobao.org/typescript/download/typescript-3.6.3.tgz?cache=0&sync_timestamp=1569046697682&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Ftypescript%2Fdownload%2Ftypescript-3.6.3.tgz#fea942fabb20f7e1ca7164ff626f1a9f3f70b4da"
+  integrity sha1-/qlC+rsg9+HKcWT/Ym8anz9wtNo=
 
 uri-js@^4.2.2:
   version "4.2.2"
