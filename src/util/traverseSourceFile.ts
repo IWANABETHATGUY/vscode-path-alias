@@ -4,7 +4,7 @@ import {
   isVariableStatement,
   createSourceFile,
   ScriptTarget,
-  SyntaxKind,
+  SyntaxKind
 } from 'typescript';
 
 // interface IExportToken {
@@ -22,11 +22,13 @@ export function traverse(filename: string, fileContent: string) {
   _traverse(result, exportKeywordList);
   return exportKeywordList;
 }
-function _traverse(node: Node, tokenList: string[]): void {
+function _traverse(node: Node, tokenList: string[], depth = 0): void {
   getExportKeyword(node, tokenList);
-  node.forEachChild((n: Node) => {
-    _traverse(n, tokenList);
-  });
+  if (depth <= 1) {
+    node.forEachChild((n: Node) => {
+      _traverse(n, tokenList, depth + 1);
+    });
+  }
 }
 
 function getExportKeyword(node: Node, tokenList: string[]) {
