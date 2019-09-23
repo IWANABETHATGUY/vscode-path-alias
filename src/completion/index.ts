@@ -50,9 +50,8 @@ export class PathAliasCompletion implements CompletionItemProvider {
     context: CompletionContext
   ): Promise<CompletionItem[] | CompletionList> {
     const completionList: CompletionItem[] = [];
+    console.time('completion');
     const aliasReg = /\"(.*)\"|\'(.*)\'/;
-    const importReg = /import\s*{([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/;
-    const importRange = document.getWordRangeAtPosition(position, importReg);
     const range = document.getWordRangeAtPosition(position, aliasReg);
     if (range) {
       const inputPath = document.getText(range);
@@ -90,49 +89,76 @@ export class PathAliasCompletion implements CompletionItemProvider {
           completionList.push(...retCompletionList);
         }
       }
-    } else if (importRange) {
-      const [, importIdentifiers, pathAlias] = importReg.exec(
-        document.getText(importRange)
-      )!;
-      const mostLike = mostLikeAlias(this._aliasList, pathAlias.split('/')[0]);
-      if (mostLike) {
-        const pathList = [
-          this._statMap[mostLike]['absolutePath'],
-          ...pathAlias.split('/').slice(1)
-        ];
-        const absolutePath = path.join(...pathList);
-        let extname = path.extname(absolutePath);
-        if (!extname) {
-          if (fs.existsSync(`${absolutePath}.js`)) {
-            extname = 'js';
-          } else if (fs.existsSync(`${absolutePath}.ts`)) {
-            extname = 'ts';
-          }
+    } else {
+      const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
+      const content = document.getText();
+      const zeroBasedPosition = document.offsetAt(position);
+      console.time('reg');
+      let execResult: Nullable<RegExpExecArray> = null;
+      while ((execResult = importReg.exec(content))) {
+        const [, beforeLeftBrace, importIdentifiers] = execResult;
+        const index = execResult.index;
+        const leftBrachStart = index + beforeLeftBrace.length;
+        if (
+          zeroBasedPosition > leftBrachStart &&
+          zeroBasedPosition <= leftBrachStart + importIdentifiers.length + 1
+        ) {
+          break;
         }
-        if (extname === 'js' || extname === 'ts') {
-          const absolutePathWithExtname = absolutePath + '.' + extname;
-          const file = fs.readFileSync(absolutePathWithExtname, {
-            encoding: 'utf8'
-          });
-          // 这里是已经导入的函数或变量
-          const importIdentifierList = importIdentifiers
-            .split(',')
-            .filter(Boolean)
-            .map(id => id.trim());
-          const exportIdentifierList = traverse(absolutePathWithExtname, file);
-          const retCompletionList = exportIdentifierList
-            .filter(id => importIdentifierList.indexOf(id) === -1)
-            .map(id => {
-              const completionItem = new CompletionItem(id);
-              // TODO: 这里需要具体细化是函数还是变量
-              completionItem.sortText = `0${id}`;
-              completionItem.kind = CompletionItemKind.Function;
-              return completionItem;
+      }
+      console.timeEnd('reg');
+      if (execResult) {
+        const [, , importIdentifiers, pathAlias] = execResult;
+        const mostLike = mostLikeAlias(
+          this._aliasList,
+          pathAlias.split('/')[0]
+        );
+        if (mostLike) {
+          const pathList = [
+            this._statMap[mostLike]['absolutePath'],
+            ...pathAlias.split('/').slice(1)
+          ];
+          const absolutePath = path.join(...pathList);
+          let extname = path.extname(absolutePath);
+          if (!extname) {
+            if (fs.existsSync(`${absolutePath}.js`)) {
+              extname = 'js';
+            } else if (fs.existsSync(`${absolutePath}.ts`)) {
+              extname = 'ts';
+            }
+          }
+          if (extname === 'js' || extname === 'ts') {
+            console.time('ast');
+            const absolutePathWithExtname = absolutePath + '.' + extname;
+            const file = fs.readFileSync(absolutePathWithExtname, {
+              encoding: 'utf8'
             });
-          completionList.push(...retCompletionList);
+            // 这里是已经导入的函数或变量
+            const importIdentifierList = importIdentifiers
+              .split(',')
+              .filter(Boolean)
+              .map(id => id.trim());
+            const exportIdentifierList = traverse(
+              absolutePathWithExtname,
+              file
+            );
+            console.timeEnd('ast');
+
+            const retCompletionList = exportIdentifierList
+              .filter(id => importIdentifierList.indexOf(id) === -1)
+              .map(id => {
+                const completionItem = new CompletionItem(id);
+                // TODO: 这里需要具体细化是函数还是变量
+                completionItem.sortText = `0${id}`;
+                completionItem.kind = CompletionItemKind.Function;
+                return completionItem;
+              });
+            completionList.push(...retCompletionList);
+          }
         }
       }
     }
+    console.timeEnd('completion');
 
     return completionList;
   }
