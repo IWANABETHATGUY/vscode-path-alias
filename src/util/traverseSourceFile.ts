@@ -4,41 +4,55 @@ import {
   isVariableStatement,
   createSourceFile,
   ScriptTarget,
-  SyntaxKind
+  SyntaxKind,
+  getLineAndCharacterOfPosition,
+  LineAndCharacter,
+  SourceFileLike,
 } from 'typescript';
 
-// interface IExportToken {
-//   identifier: string;
-//   description: string;
-// }
+interface IExportToken {
+  identifier: string;
+  description?: string;
+  position: LineAndCharacter
+}
+
 export function traverse(filename: string, fileContent: string) {
-  const exportKeywordList: string[] = [];
+  const exportKeywordList: IExportToken[] = [];
   const result = createSourceFile(
     filename,
     fileContent,
     ScriptTarget.ES2015,
-    true
+    true,
   );
-  _traverse(result, exportKeywordList);
+  _traverse(result, exportKeywordList, result);
   return exportKeywordList;
 }
-function _traverse(node: Node, tokenList: string[], depth = 0): void {
-  getExportKeyword(node, tokenList);
+function _traverse(node: Node, tokenList: IExportToken[], source: SourceFileLike, depth = 0): void {
+  getExportKeyword(node, tokenList, source);
   if (depth <= 1) {
     node.forEachChild((n: Node) => {
-      _traverse(n, tokenList, depth + 1);
+      _traverse(n, tokenList, source, depth + 1);
     });
   }
 }
 
-function getExportKeyword(node: Node, tokenList: string[]) {
+function getExportKeyword(node: Node, tokenList: IExportToken[], source: SourceFileLike) {
   if (node.modifiers && node.modifiers[0].kind === SyntaxKind.ExportKeyword) {
     if (isVariableStatement(node)) {
       node.declarationList.declarations.forEach(decleration => {
-        tokenList.push(decleration.name.getText());
+        tokenList.push({
+          identifier: decleration.name.getText(),
+          description: '',
+          position: getLineAndCharacterOfPosition(source, decleration.pos)
+          
+        });
       });
     } else if (isFunctionDeclaration(node)) {
-      tokenList.push(node.name!.getText());
+      const position = getLineAndCharacterOfPosition(source, node.name!.getStart());
+      tokenList.push({
+        identifier: node.name!.getText(),
+        position
+      });
     }
   }
 }

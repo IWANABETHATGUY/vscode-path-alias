@@ -141,7 +141,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
             const exportIdentifierList = traverse(
               absolutePathWithExtname,
               file
-            );
+            ).map(exportToken => exportToken.identifier)
             console.timeEnd('ast');
 
             const retCompletionList = exportIdentifierList
