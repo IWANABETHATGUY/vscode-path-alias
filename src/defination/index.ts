@@ -10,7 +10,7 @@ import {
   Uri
 } from 'vscode';
 import { AliasStatTree, StatInfo } from '../completion/type';
-import { isObject, mostLikeAlias } from '../util/common';
+import { isObject, mostLikeAlias, normalizePath } from '../util/common';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Nullable } from '../util/types';
@@ -126,8 +126,8 @@ export class PathAliasDefinition implements DefinitionProvider {
       }
       console.timeEnd('reg');
       if (execResult) {
-        const reg = /\w+/
-        const wordRange = document.getWordRangeAtPosition(position, reg)
+        const reg = /\w+/;
+        const wordRange = document.getWordRangeAtPosition(position, reg);
         if (!wordRange) {
           return null;
         }
@@ -142,13 +142,16 @@ export class PathAliasDefinition implements DefinitionProvider {
             this._statMap[mostLike]['absolutePath'],
             ...pathAlias.split('/').slice(1)
           ];
-          const absolutePath = path.join(...pathList);
+          let absolutePath = path.join(...pathList);
           let extname = path.extname(absolutePath);
           if (!extname) {
             if (fs.existsSync(`${absolutePath}.js`)) {
               extname = 'js';
             } else if (fs.existsSync(`${absolutePath}.ts`)) {
               extname = 'ts';
+            } else if (fs.existsSync(normalizePath(absolutePath))) {
+              absolutePath += '/index';
+              extname = 'js';
             }
           }
           if (extname === 'js' || extname === 'ts') {
@@ -162,10 +165,18 @@ export class PathAliasDefinition implements DefinitionProvider {
               absolutePathWithExtname,
               file
             );
-            const retDefination = exportIdentifierList.filter(token => token.identifier === word)[0];
+            const retDefination = exportIdentifierList.filter(
+              token => token.identifier === word
+            )[0];
             console.timeEnd('ast');
             if (retDefination) {
-              return new Location(Uri.file(absolutePathWithExtname), new Position(retDefination.position.line, retDefination.position.character))
+              return new Location(
+                Uri.file(absolutePathWithExtname),
+                new Position(
+                  retDefination.position.line,
+                  retDefination.position.character
+                )
+              );
             }
           }
         }

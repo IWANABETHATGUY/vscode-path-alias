@@ -11,7 +11,7 @@ import {
   workspace
 } from 'vscode';
 import { StatInfo, AliasStatTree } from './type';
-import { isObject, mostLikeAlias } from '../util/common';
+import { isObject, mostLikeAlias, normalizePath } from '../util/common';
 import * as path from 'path';
 import { Nullable } from '../util/types';
 import * as fs from 'fs';
@@ -118,13 +118,16 @@ export class PathAliasCompletion implements CompletionItemProvider {
             this._statMap[mostLike]['absolutePath'],
             ...pathAlias.split('/').slice(1)
           ];
-          const absolutePath = path.join(...pathList);
+          let absolutePath = path.join(...pathList);
           let extname = path.extname(absolutePath);
           if (!extname) {
             if (fs.existsSync(`${absolutePath}.js`)) {
               extname = 'js';
             } else if (fs.existsSync(`${absolutePath}.ts`)) {
               extname = 'ts';
+            } else if (fs.existsSync(normalizePath(absolutePath))) {
+              absolutePath += '/index'
+              extname = 'js'
             }
           }
           if (extname === 'js' || extname === 'ts') {
