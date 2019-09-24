@@ -141,16 +141,21 @@ export class PathAliasCompletion implements CompletionItemProvider {
             const exportIdentifierList = traverse(
               absolutePathWithExtname,
               file
-            ).map(exportToken => exportToken.identifier)
+            );
             console.timeEnd('ast');
 
             const retCompletionList = exportIdentifierList
-              .filter(id => importIdentifierList.indexOf(id) === -1)
-              .map(id => {
-                const completionItem = new CompletionItem(id);
-                // TODO: 这里需要具体细化是函数还是变量
-                completionItem.sortText = `0${id}`;
-                completionItem.kind = CompletionItemKind.Function;
+              .filter(
+                token => importIdentifierList.indexOf(token.identifier) === -1
+              )
+              .map(token => {
+                const completionItem = new CompletionItem(token.identifier);
+                completionItem.sortText = `0${token.identifier}`;
+                completionItem.kind =
+                  token.kind === 'function'
+                    ? CompletionItemKind.Function
+                    : CompletionItemKind.Property;
+                completionItem.documentation = token.description;
                 return completionItem;
               });
             completionList.push(...retCompletionList);

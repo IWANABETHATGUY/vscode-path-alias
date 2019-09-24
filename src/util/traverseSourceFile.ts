@@ -13,7 +13,8 @@ import {
 interface IExportToken {
   identifier: string;
   description?: string;
-  position: LineAndCharacter
+  position: LineAndCharacter;
+  kind: 'function' | 'variable'
 }
 
 export function traverse(filename: string, fileContent: string) {
@@ -42,8 +43,9 @@ function getExportKeyword(node: Node, tokenList: IExportToken[], source: SourceF
       node.declarationList.declarations.forEach(decleration => {
         tokenList.push({
           identifier: decleration.name.getText(),
-          description: '',
-          position: getLineAndCharacterOfPosition(source, decleration.pos)
+          description: node.getText(),
+          position: getLineAndCharacterOfPosition(source, decleration.pos),
+          kind: 'variable'
           
         });
       });
@@ -51,7 +53,9 @@ function getExportKeyword(node: Node, tokenList: IExportToken[], source: SourceF
       const position = getLineAndCharacterOfPosition(source, node.name!.getStart());
       tokenList.push({
         identifier: node.name!.getText(),
-        position
+        position,
+        description: node.getText(),
+        kind: 'function'
       });
     }
   }
