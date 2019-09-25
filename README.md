@@ -22,7 +22,9 @@
   - ![multiline-import](https://vuethisstore.flatpeach.xyz/path-alias-multiline-import.gif)
   - 支持从相对路径到路径别名的重构
   - ![refactor](https://vuethisstore.flatpeach.xyz/path-alias-refactor.gif)
+  - 支持import变量的跳转
+  - ![import-defination](https://vuethisstore.flatpeach.xyz/path-alias-import-defination.gif)
 ## TODO
 - [x] 提供import提示  
-- [ ] 提供import跳转  
+- [x] 提供import跳转  
 - [x] 提供将相对路径转化为path alias 的重构功能
