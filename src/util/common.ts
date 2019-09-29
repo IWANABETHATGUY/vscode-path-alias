@@ -50,3 +50,62 @@ export function normalizePath(absolutePath: string) {
   }
   return absolutePath;
 }
+
+
+/**
+ * 将驼峰风格的变量转化为Pascal风格
+ * 
+ * @export
+ * @param {string} str 
+ * @returns {string} 
+ */
+export function transformCamelToPascal(str: string): string {
+  let last = 0;
+  let i = 0;
+  let retList = [];
+  while (i < str.length) {
+    if (isUpperCase(str[i])) {
+      retList.push(str.slice(last, i));
+      last = i;
+    }
+    i++;
+  }
+  retList.push(str.slice(last, i));
+  return retList
+    .filter(Boolean)
+    .map(item => {
+      return item[0].toUpperCase() + item.slice(1);
+    })
+    .join('');
+}
+
+
+/**
+ * 将使用短横线连接的变量转化为Pascal风格的变量
+ * 
+ * @export
+ * @param {string} str 
+ * @returns {string} 
+ */
+export function transformHyphenToPascal(str: string): string {
+  let last = 0;
+  let i = 0;
+  let retList = [];
+  while (i < str.length) {
+    if (str[i] === '-') {
+      retList.push(str.slice(last, i));
+      last = i + 1;
+    }
+    i++;
+  }
+  retList.push(str.slice(last, i));
+  return retList
+    .filter(Boolean)
+    .map(item => {
+      return item[0].toUpperCase() + item.slice(1);
+    })
+    .join('');
+}
+function isUpperCase(char: string): boolean {
+  return char >= 'A' && char <= 'Z';
+}

@@ -1,6 +1,7 @@
 import { ExtensionContext, workspace, languages } from 'vscode';
 import { PathAliasCompletion } from './completion';
 import { PathAliasDefinition } from './defination';
+import { PathAliasTagDefinition } from './defination/tag';
 import { AliasMap, StatInfo, AliasStatTree } from './completion/type';
 import { existsSync, statSync, readdirSync } from 'fs';
 import * as path from 'path';
@@ -8,6 +9,7 @@ import { EventEmitter } from 'events';
 import { debounce } from './util/common';
 import { generateWatcher } from './util/watcher';
 import { PathAliasCodeActionProvider } from './codeAction';
+
 export const eventBus = new EventEmitter();
 
 export class PathAlias {
@@ -17,6 +19,7 @@ export class PathAlias {
   private _completion!: PathAliasCompletion;
   private _defination!: PathAliasDefinition;
   private _codeAction!: PathAliasCodeActionProvider;
+  private _tagDefination!: PathAliasTagDefinition;
   constructor(ctx: ExtensionContext) {
     console.time('init');
     this._ctx = ctx;
@@ -121,7 +124,7 @@ export class PathAlias {
 
   private initDefinition() {
     this._defination = new PathAliasDefinition(this._statMap);
-
+    this._tagDefination = new PathAliasTagDefinition(this._statMap);
     this._ctx.subscriptions.push(
       languages.registerDefinitionProvider(
         [
@@ -129,6 +132,10 @@ export class PathAlias {
           { language: 'vue', scheme: 'file' }
         ],
         this._defination
+      ),
+      languages.registerDefinitionProvider(
+        [{ language: 'vue', scheme: 'file' }],
+        this._tagDefination
       )
     );
   }
