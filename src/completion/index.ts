@@ -60,7 +60,6 @@ export class PathAliasCompletion implements CompletionItemProvider {
       if (mostLike) {
         let statInfo: StatInfo = this._statMap[mostLike];
         let splitPath = resPath.split('/').slice(1, -1);
-        // .filter(Boolean);
         const lastPath = splitPath.reduce((pre: Nullable<StatInfo>, cur) => {
           if (isObject(pre)) {
             pre = pre.children[cur];
