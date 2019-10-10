@@ -39,15 +39,15 @@ export class PathAliasTagDefinition implements DefinitionProvider {
     const range = document.getWordRangeAtPosition(position, reg);
     const sourceCode = document.getText();
     if (range) {
+      const importDefaultDeclarationReg = /import\s+(\w+)\s+from\s(\'(?:.*?)\'|\"(?:.*?)\")/g
       const tag = document.getText(range).replace('<', '').trim();
       const normalizedTag = transformHyphenToPascal(transformCamelToPascal(tag))
-      const importDefaultDeclarationReg = /import\s+(\w+)\s+from\s(?:\'(.*?)\'|\"(.*?)\")/g
       let regMatch:Nullable<RegExpExecArray> = null;
       let aliasPath: string = '';
       while ((regMatch = importDefaultDeclarationReg.exec(sourceCode))) {
         const [, localIdentifier, path] = regMatch;
         if (transformCamelToPascal(localIdentifier) === normalizedTag) {
-          aliasPath = path;
+          aliasPath = path.slice(1, -1);
           break;
         }
       }
@@ -56,8 +56,9 @@ export class PathAliasTagDefinition implements DefinitionProvider {
         let statInfo: StatInfo = this._statMap[mostLike];
         const absolutePath = aliasPath.replace(mostLike, statInfo.absolutePath);
         console.timeEnd('tag-defination')
+        const normalizedAbsolutePath = absolutePath + (absolutePath.endsWith('vue') ? '' : '.vue')
         return new Location(
-          Uri.file(absolutePath + '.vue'),
+          Uri.file(normalizedAbsolutePath),
           new Position(0, 0)
         );
       }
