@@ -24,3 +24,5 @@
   - ![refactor](https://user-gold-cdn.xitu.io/2019/9/27/16d71ca03dc9a2fd?w=1425&h=780&f=gif&s=138859)
   - 支持import变量的跳转
   - ![import-defination](https://user-gold-cdn.xitu.io/2019/9/27/16d71c9fb0a4aea3?w=1425&h=776&f=gif&s=377609)
+  - 支持组件标签跳转。
+  - ![html-tag-defination](https://vuethisstore.flatpeach.xyz/html-tag-defination.gif)
