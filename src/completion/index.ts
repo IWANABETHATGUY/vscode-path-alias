@@ -57,13 +57,10 @@ export class PathAliasCompletion implements CompletionItemProvider {
       const inputPath = document.getText(range);
       const resPath = inputPath.slice(1, -1);
       const mostLike = mostLikeAlias(this._aliasList, resPath.split('/')[0]);
-
       if (mostLike) {
         let statInfo: StatInfo = this._statMap[mostLike];
-        let splitPath = resPath
-          .split('/')
-          .slice(1)
-          .filter(Boolean);
+        let splitPath = resPath.split('/').slice(1, -1);
+        // .filter(Boolean);
         const lastPath = splitPath.reduce((pre: Nullable<StatInfo>, cur) => {
           if (isObject(pre)) {
             pre = pre.children[cur];
@@ -126,8 +123,8 @@ export class PathAliasCompletion implements CompletionItemProvider {
             } else if (fs.existsSync(`${absolutePath}.ts`)) {
               extname = 'ts';
             } else if (fs.existsSync(normalizePath(absolutePath))) {
-              absolutePath += '/index'
-              extname = 'js'
+              absolutePath += '/index';
+              extname = 'js';
             }
           }
           if (extname === 'js' || extname === 'ts') {
