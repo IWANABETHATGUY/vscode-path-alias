@@ -64,3 +64,5 @@ typings/
 out
 
 .DS_Store
+
+*.vsix
