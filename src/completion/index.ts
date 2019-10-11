@@ -52,7 +52,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
   ): Promise<CompletionItem[] | CompletionList> {
     const completionList: CompletionItem[] = [];
     console.time('completion');
-    const aliasReg = /\"(.*)\"|\'(.*)\'/;
+    const aliasReg = /\"(.*?)\"|\'(.*?)\'/;
     const range = document.getWordRangeAtPosition(position, aliasReg);
     if (range) {
       const inputPath = document.getText(range);
