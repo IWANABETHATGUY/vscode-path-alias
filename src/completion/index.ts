@@ -74,7 +74,9 @@ export class PathAliasCompletion implements CompletionItemProvider {
           const retCompletionList = Object.keys(children).map(key => {
             const curStatInfo = children[key];
             const completionItem = new CompletionItem(key);
-            const [basename, extension] = key.split('.');
+            const splitList = key.split('.');
+            const basename = splitList.slice(0, -1).join('.');
+            const extension = splitList[splitList.length - 1];
             if (curStatInfo.type === 'file' && !this._needExtension && this._ignoreExtentionList.indexOf(extension) > -1) {
               completionItem.insertText = basename;
             }
