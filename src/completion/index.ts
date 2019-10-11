@@ -20,19 +20,27 @@ export class PathAliasCompletion implements CompletionItemProvider {
   private _aliasList: string[] = [];
   private _statMap!: AliasStatTree;
   private _disposable: Disposable;
-  private _ignoreExtentionList: string[] = ['js', 'ts', 'vue', 'jsx', 'tsx'];
+  private _ignoreExtensionList: string[];
   private _needExtension: boolean = true;
   constructor(statMap: AliasStatTree) {
     let subscriptions: Disposable[] = [];
     this._needExtension = !!workspace
       .getConfiguration('pathAlias')
       .get('needExtension');
+    this._ignoreExtensionList =
+      workspace.getConfiguration('pathAlias').get('ignoreExtensionList') || [];
     this.setStatMap(statMap);
+
     workspace.onDidChangeConfiguration(e => {
       if (e.affectsConfiguration('pathAlias.needExtension')) {
         this._needExtension = !!workspace
           .getConfiguration('pathAlias')
           .get('needExtension');
+      }
+      if (e.affectsConfiguration('pathAlias.ignoreExtensionList')) {
+        this._ignoreExtensionList =
+          workspace.getConfiguration('pathAlias').get('ignoreExtensionList') ||
+          [];
       }
     });
     this._disposable = Disposable.from(...subscriptions);
@@ -77,7 +85,11 @@ export class PathAliasCompletion implements CompletionItemProvider {
             const splitList = key.split('.');
             const basename = splitList.slice(0, -1).join('.');
             const extension = splitList[splitList.length - 1];
-            if (curStatInfo.type === 'file' && !this._needExtension && this._ignoreExtentionList.indexOf(extension) > -1) {
+            if (
+              curStatInfo.type === 'file' &&
+              !this._needExtension &&
+              this._ignoreExtensionList.indexOf(extension) > -1
+            ) {
               completionItem.insertText = basename;
             }
             completionItem.kind =

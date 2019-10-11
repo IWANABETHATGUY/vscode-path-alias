@@ -34,6 +34,11 @@
                     "type": "boolean",
                     "default": true,
                     "description": "是否需要补全文件的扩展名"
+                },
+                "pathAlias.ignoreExtensionList": {
+                    "type": "array",
+                    "default": ["js", "ts", "tsx", "jsx", "vue"],
+                    "description": "当开启忽略扩展名模式时，忽略的扩展名列表"
                 }
             }
         }
