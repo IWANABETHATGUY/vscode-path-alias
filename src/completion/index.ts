@@ -20,6 +20,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
   private _aliasList: string[] = [];
   private _statMap!: AliasStatTree;
   private _disposable: Disposable;
+  private _ignoreExtentionList: string[] = ['js', 'ts', 'vue', 'jsx', 'tsx'];
   private _needExtension: boolean = true;
   constructor(statMap: AliasStatTree) {
     let subscriptions: Disposable[] = [];
@@ -73,8 +74,9 @@ export class PathAliasCompletion implements CompletionItemProvider {
           const retCompletionList = Object.keys(children).map(key => {
             const curStatInfo = children[key];
             const completionItem = new CompletionItem(key);
-            if (curStatInfo.type === 'file' && !this._needExtension) {
-              completionItem.insertText = key.split('.')[0];
+            const [basename, extension] = key.split('.');
+            if (curStatInfo.type === 'file' && !this._needExtension && this._ignoreExtentionList.indexOf(extension) > -1) {
+              completionItem.insertText = basename;
             }
             completionItem.kind =
               curStatInfo.type === 'directory'
