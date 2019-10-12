@@ -8,7 +8,10 @@ import {
   TextDocument,
   CompletionItemKind,
   Disposable,
-  workspace
+  workspace,
+  TextEdit,
+  WorkspaceEdit,
+  Range
 } from 'vscode';
 import { StatInfo, AliasStatTree } from './type';
 import { isObject, mostLikeAlias, normalizePath } from '../util/common';
@@ -68,20 +71,36 @@ export class PathAliasCompletion implements CompletionItemProvider {
       const mostLike = mostLikeAlias(this._aliasList, resPath.split('/')[0]);
       if (mostLike) {
         let statInfo: StatInfo = this._statMap[mostLike];
-        let splitPath = resPath.split('/').slice(1, -1);
-        const lastPath = splitPath.reduce((pre: Nullable<StatInfo>, cur) => {
+        let prefixPathList: string[] = []; 
+        let insertPath = '';
+        resPath.split('/').forEach((path, index, array) => {
+          if (index > 0 && index < array.length - 1) {
+            prefixPathList.push(path);
+          }
+          else if (index === array.length - 1) {
+            insertPath = path;
+          }
+        })
+        // let splitPath = resPath
+        //   .split('/')
+        //   .slice(1)
+        //   .filter(Boolean);
+        const lastPath = prefixPathList.reduce((pre: Nullable<StatInfo>, cur) => {
           if (isObject(pre)) {
             pre = pre.children[cur];
             return pre;
           }
           return null;
         }, statInfo);
-
+        // debugger
         if (lastPath) {
           const children = lastPath.children;
           const retCompletionList = Object.keys(children).map(key => {
             const curStatInfo = children[key];
             const completionItem = new CompletionItem(key);
+            // debugger
+            const replaceRange = getInserPathRange(range, document, insertPath.length);
+            completionItem.range = replaceRange;
             const splitList = key.split('.');
             const basename = splitList.slice(0, -1).join('.');
             const extension = splitList[splitList.length - 1];
@@ -182,4 +201,12 @@ export class PathAliasCompletion implements CompletionItemProvider {
 
     return completionList;
   }
+}
+
+
+function getInserPathRange(range: Range, document: TextDocument, length: number): Range {
+  const numberOfEndPoint = document.offsetAt(range.end);
+  const end = document.positionAt(numberOfEndPoint - 1);
+  const start = document.positionAt(numberOfEndPoint - length - 1);
+  return new Range(start, end);
 }
