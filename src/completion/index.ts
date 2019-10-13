@@ -9,8 +9,6 @@ import {
   CompletionItemKind,
   Disposable,
   workspace,
-  TextEdit,
-  WorkspaceEdit,
   Range
 } from 'vscode';
 import { StatInfo, AliasStatTree } from './type';
@@ -64,7 +62,9 @@ export class PathAliasCompletion implements CompletionItemProvider {
     const completionList: CompletionItem[] = [];
     console.time('completion');
     const aliasReg = /\"(.*?)\"|\'(.*?)\'/;
+
     const range = document.getWordRangeAtPosition(position, aliasReg);
+    // debugger;
     if (range) {
       const inputPath = document.getText(range);
       const resPath = inputPath.slice(1, -1);
