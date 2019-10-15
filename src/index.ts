@@ -9,6 +9,7 @@ import { EventEmitter } from 'events';
 import { debounce } from './util/common';
 import { generateWatcher } from './util/watcher';
 import { PathAliasCodeActionProvider } from './codeAction';
+import { getAliasConfig } from './util/config';
 
 export const eventBus = new EventEmitter();
 
@@ -72,6 +73,10 @@ export class PathAlias {
     this._aliasMap =
       workspace.getConfiguration('pathAlias').get('aliasMap') || {};
 
+    this._aliasMap = {
+      ...this._aliasMap,
+      ...getAliasConfig(workspace.rootPath || '')
+    };
     Object.keys(this._aliasMap).forEach(alias => {
       const realPath = this._aliasMap[alias].replace(
         '${cwd}',
