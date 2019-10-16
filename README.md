@@ -26,3 +26,4 @@
   - ![import-defination](https://user-gold-cdn.xitu.io/2019/9/27/16d71c9fb0a4aea3?w=1425&h=776&f=gif&s=377609)
   - 支持组件标签跳转。
   - ![html-tag-defination](https://vuethisstore.flatpeach.xyz/html-tag-defination.gif)
+  - 添加配置文件可以通过package.json 字段pathalias 或者在根目录下的.pathaliasrc(以json格式书写)配置路径别名
