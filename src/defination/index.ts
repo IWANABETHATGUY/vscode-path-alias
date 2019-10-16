@@ -108,80 +108,77 @@ export class PathAliasDefinition implements DefinitionProvider {
         }
       }
     } else {
-      const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
-      const content = document.getText();
-      const zeroBasedPosition = document.offsetAt(position);
-      console.time('reg');
-      let execResult: Nullable<RegExpExecArray> = null;
-      while ((execResult = importReg.exec(content))) {
-        const [, beforeLeftBrace, importIdentifiers] = execResult;
-        const index = execResult.index;
-        const leftBrachStart = index + beforeLeftBrace.length;
-        if (
-          zeroBasedPosition > leftBrachStart &&
-          zeroBasedPosition <= leftBrachStart + importIdentifiers.length + 1
-        ) {
-          break;
-        }
+      return this.importDefination(document, position);
+    }
+    return null;
+  }
+  private importDefination(document: TextDocument, position: Position) {
+    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
+    const content = document.getText();
+    const zeroBasedPosition = document.offsetAt(position);
+    console.time('reg');
+    let execResult: Nullable<RegExpExecArray> = null;
+    while ((execResult = importReg.exec(content))) {
+      const [, beforeLeftBrace, importIdentifiers] = execResult;
+      const index = execResult.index;
+      const leftBrachStart = index + beforeLeftBrace.length;
+      if (
+        zeroBasedPosition > leftBrachStart &&
+        zeroBasedPosition <= leftBrachStart + importIdentifiers.length + 1
+      ) {
+        break;
       }
-      console.timeEnd('reg');
-      if (execResult) {
-        const reg = /\w+/;
-        const wordRange = document.getWordRangeAtPosition(position, reg);
-        if (!wordRange) {
-          return null;
-        }
-        const word = document.getText(wordRange);
-        const [, , , pathAlias] = execResult;
-        const mostLike = mostLikeAlias(
-          this._aliasList,
-          pathAlias.split('/')[0]
-        );
-        if (mostLike) {
-          const pathList = [
-            this._statMap[mostLike]['absolutePath'],
-            ...pathAlias.split('/').slice(1)
-          ];
-          let absolutePath = path.join(...pathList);
-          let extname = path.extname(absolutePath);
-          if (!extname) {
-            if (fs.existsSync(`${absolutePath}.js`)) {
-              extname = 'js';
-            } else if (fs.existsSync(`${absolutePath}.ts`)) {
-              extname = 'ts';
-            } else if (fs.existsSync(normalizePath(absolutePath))) {
-              absolutePath += '/index';
-              extname = 'js';
-            }
+    }
+    console.timeEnd('reg');
+    if (execResult) {
+      const reg = /\w+/;
+      const wordRange = document.getWordRangeAtPosition(position, reg);
+      if (!wordRange) {
+        return null;
+      }
+      const word = document.getText(wordRange);
+      const [, , , pathAlias] = execResult;
+      const mostLike = mostLikeAlias(this._aliasList, pathAlias.split('/')[0]);
+      if (mostLike) {
+        const pathList = [
+          this._statMap[mostLike]['absolutePath'],
+          ...pathAlias.split('/').slice(1)
+        ];
+        let absolutePath = path.join(...pathList);
+        let extname = path.extname(absolutePath);
+        if (!extname) {
+          if (fs.existsSync(`${absolutePath}.js`)) {
+            extname = 'js';
+          } else if (fs.existsSync(`${absolutePath}.ts`)) {
+            extname = 'ts';
+          } else if (fs.existsSync(normalizePath(absolutePath))) {
+            absolutePath += '/index';
+            extname = 'js';
           }
-          if (extname === 'js' || extname === 'ts') {
-            console.time('ast');
-            const absolutePathWithExtname = absolutePath + '.' + extname;
-            const file = fs.readFileSync(absolutePathWithExtname, {
-              encoding: 'utf8'
-            });
-            // 这里是已经导入的函数或变量
-            const exportIdentifierList = traverse(
-              absolutePathWithExtname,
-              file
+        }
+        if (extname === 'js' || extname === 'ts') {
+          console.time('ast');
+          const absolutePathWithExtname = absolutePath + '.' + extname;
+          const file = fs.readFileSync(absolutePathWithExtname, {
+            encoding: 'utf8'
+          });
+          // 这里是已经导入的函数或变量
+          const exportIdentifierList = traverse(absolutePathWithExtname, file);
+          const retDefination = exportIdentifierList.filter(
+            token => token.identifier === word
+          )[0];
+          console.timeEnd('ast');
+          if (retDefination) {
+            return new Location(
+              Uri.file(absolutePathWithExtname),
+              new Position(
+                retDefination.position.line,
+                retDefination.position.character
+              )
             );
-            const retDefination = exportIdentifierList.filter(
-              token => token.identifier === word
-            )[0];
-            console.timeEnd('ast');
-            if (retDefination) {
-              return new Location(
-                Uri.file(absolutePathWithExtname),
-                new Position(
-                  retDefination.position.line,
-                  retDefination.position.character
-                )
-              );
-            }
           }
         }
       }
     }
-    return null;
   }
 }

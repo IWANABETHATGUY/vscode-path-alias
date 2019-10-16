@@ -26,7 +26,6 @@ export class PathAlias {
     this._ctx = ctx;
     this.init();
     if (workspace.rootPath) {
-      //TODO:当改变了文件目录时，需要重新初始化
       generateWatcher(workspace.rootPath);
     }
     workspace.onDidChangeConfiguration(e => {
@@ -35,7 +34,6 @@ export class PathAlias {
       }
     });
     const handler = debounce(() => {
-      console.log('change');
       this.updateStatInfo();
     }, 1000);
     eventBus.on('file-change', path => {
