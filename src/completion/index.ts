@@ -71,27 +71,25 @@ export class PathAliasCompletion implements CompletionItemProvider {
       const mostLike = mostLikeAlias(this._aliasList, resPath.split('/')[0]);
       if (mostLike) {
         let statInfo: StatInfo = this._statMap[mostLike];
-        let prefixPathList: string[] = []; 
+        let prefixPathList: string[] = [];
         let insertPath = '';
         resPath.split('/').forEach((path, index, array) => {
           if (index > 0 && index < array.length - 1) {
             prefixPathList.push(path);
-          }
-          else if (index === array.length - 1) {
+          } else if (index === array.length - 1) {
             insertPath = path;
           }
-        })
-        // let splitPath = resPath
-        //   .split('/')
-        //   .slice(1)
-        //   .filter(Boolean);
-        const lastPath = prefixPathList.reduce((pre: Nullable<StatInfo>, cur) => {
-          if (isObject(pre)) {
-            pre = pre.children[cur];
-            return pre;
-          }
-          return null;
-        }, statInfo);
+        });
+        const lastPath = prefixPathList.reduce(
+          (pre: Nullable<StatInfo>, cur) => {
+            if (isObject(pre)) {
+              pre = pre.children[cur];
+              return pre;
+            }
+            return null;
+          },
+          statInfo
+        );
         // debugger
         if (lastPath) {
           const children = lastPath.children;
@@ -99,7 +97,11 @@ export class PathAliasCompletion implements CompletionItemProvider {
             const curStatInfo = children[key];
             const completionItem = new CompletionItem(key);
             // debugger
-            const replaceRange = getInserPathRange(range, document, insertPath.length);
+            const replaceRange = getInserPathRange(
+              range,
+              document,
+              insertPath.length
+            );
             completionItem.range = replaceRange;
             const splitList = key.split('.');
             const basename = splitList.slice(0, -1).join('.');
@@ -121,90 +123,92 @@ export class PathAliasCompletion implements CompletionItemProvider {
         }
       }
     } else {
-      const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
-      const content = document.getText();
-      const zeroBasedPosition = document.offsetAt(position);
-      console.time('reg');
-      let execResult: Nullable<RegExpExecArray> = null;
-      while ((execResult = importReg.exec(content))) {
-        const [, beforeLeftBrace, importIdentifiers] = execResult;
-        const index = execResult.index;
-        const leftBrachStart = index + beforeLeftBrace.length;
-        if (
-          zeroBasedPosition > leftBrachStart &&
-          zeroBasedPosition <= leftBrachStart + importIdentifiers.length + 1
-        ) {
-          break;
-        }
-      }
-      console.timeEnd('reg');
-      if (execResult) {
-        const [, , importIdentifiers, pathAlias] = execResult;
-        const mostLike = mostLikeAlias(
-          this._aliasList,
-          pathAlias.split('/')[0]
-        );
-        if (mostLike) {
-          const pathList = [
-            this._statMap[mostLike]['absolutePath'],
-            ...pathAlias.split('/').slice(1)
-          ];
-          let absolutePath = path.join(...pathList);
-          let extname = path.extname(absolutePath);
-          if (!extname) {
-            if (fs.existsSync(`${absolutePath}.js`)) {
-              extname = 'js';
-            } else if (fs.existsSync(`${absolutePath}.ts`)) {
-              extname = 'ts';
-            } else if (fs.existsSync(normalizePath(absolutePath))) {
-              absolutePath += '/index';
-              extname = 'js';
-            }
-          }
-          if (extname === 'js' || extname === 'ts') {
-            console.time('ast');
-            const absolutePathWithExtname = absolutePath + '.' + extname;
-            const file = fs.readFileSync(absolutePathWithExtname, {
-              encoding: 'utf8'
-            });
-            // 这里是已经导入的函数或变量
-            const importIdentifierList = importIdentifiers
-              .split(',')
-              .filter(Boolean)
-              .map(id => id.trim());
-            const exportIdentifierList = traverse(
-              absolutePathWithExtname,
-              file
-            );
-            console.timeEnd('ast');
-
-            const retCompletionList = exportIdentifierList
-              .filter(
-                token => importIdentifierList.indexOf(token.identifier) === -1
-              )
-              .map(token => {
-                const completionItem = new CompletionItem(token.identifier);
-                completionItem.sortText = `0${token.identifier}`;
-                completionItem.kind =
-                  token.kind === 'function'
-                    ? CompletionItemKind.Function
-                    : CompletionItemKind.Property;
-                completionItem.documentation = token.description;
-                return completionItem;
-              });
-            completionList.push(...retCompletionList);
-          }
-        }
-      }
+      completionList.push(...this.importCompletion(document, position));
     }
     console.timeEnd('completion');
 
     return completionList;
   }
+  private importCompletion(document: TextDocument, position: Position): CompletionItem[] {
+    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
+    const content = document.getText();
+    const zeroBasedPosition = document.offsetAt(position);
+    const completionList: CompletionItem[] = [];
+    console.time('reg');
+    let execResult: Nullable<RegExpExecArray> = null;
+    while ((execResult = importReg.exec(content))) {
+      const [, beforeLeftBrace, importIdentifiers] = execResult;
+      const index = execResult.index;
+      const leftBrachStart = index + beforeLeftBrace.length;
+      if (
+        zeroBasedPosition > leftBrachStart &&
+        zeroBasedPosition <= leftBrachStart + importIdentifiers.length + 1
+      ) {
+        break;
+      }
+    }
+    console.timeEnd('reg');
+    if (execResult) {
+      const [, , importIdentifiers, pathAlias] = execResult;
+      const mostLike = mostLikeAlias(this._aliasList, pathAlias.split('/')[0]);
+      if (mostLike) {
+        const pathList = [
+          this._statMap[mostLike]['absolutePath'],
+          ...pathAlias.split('/').slice(1)
+        ];
+        let absolutePath = path.join(...pathList);
+        let extname = path.extname(absolutePath);
+        if (!extname) {
+          if (fs.existsSync(`${absolutePath}.js`)) {
+            extname = 'js';
+          } else if (fs.existsSync(`${absolutePath}.ts`)) {
+            extname = 'ts';
+          } else if (fs.existsSync(normalizePath(absolutePath))) {
+            absolutePath += '/index';
+            extname = 'js';
+          }
+        }
+        if (extname === 'js' || extname === 'ts') {
+          console.time('ast');
+          const absolutePathWithExtname = absolutePath + '.' + extname;
+          const file = fs.readFileSync(absolutePathWithExtname, {
+            encoding: 'utf8'
+          });
+          // 这里是已经导入的函数或变量
+          const importIdentifierList = importIdentifiers
+            .split(',')
+            .filter(Boolean)
+            .map(id => id.trim());
+          const exportIdentifierList = traverse(absolutePathWithExtname, file);
+          console.timeEnd('ast');
+
+          const retCompletionList = exportIdentifierList
+            .filter(
+              token => importIdentifierList.indexOf(token.identifier) === -1
+            )
+            .map(token => {
+              const completionItem = new CompletionItem(token.identifier);
+              completionItem.sortText = `0${token.identifier}`;
+              completionItem.kind =
+                token.kind === 'function'
+                  ? CompletionItemKind.Function
+                  : CompletionItemKind.Property;
+              completionItem.documentation = token.description;
+              return completionItem;
+            });
+          completionList.push(...retCompletionList);
+        }
+      }
+    }
+    return completionList;
+  }
 }
 
-
-function getInserPathRange(range: Range, document: TextDocument, length: number): Range {
+function getInserPathRange(
+  range: Range,
+  document: TextDocument,
+  length: number
+): Range {
   const numberOfEndPoint = document.offsetAt(range.end);
   const end = document.positionAt(numberOfEndPoint - 1);
   const start = document.positionAt(numberOfEndPoint - length - 1);
