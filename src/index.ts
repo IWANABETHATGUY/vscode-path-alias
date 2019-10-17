@@ -10,9 +10,8 @@ import { debounce } from './util/common';
 import { generateWatcher } from './util/watcher';
 import { PathAliasCodeActionProvider } from './codeAction';
 import { getAliasConfig } from './util/config';
-
+import { PathAliasSignatureHelpProvider } from './signature';
 export const eventBus = new EventEmitter();
-
 export class PathAlias {
   private _ctx: ExtensionContext;
   private _statMap: AliasStatTree = {};
@@ -21,6 +20,7 @@ export class PathAlias {
   private _defination!: PathAliasDefinition;
   private _codeAction!: PathAliasCodeActionProvider;
   private _tagDefination!: PathAliasTagDefinition;
+  private _signature!: PathAliasSignatureHelpProvider;
   constructor(ctx: ExtensionContext) {
     console.time('init');
     this._ctx = ctx;
@@ -59,6 +59,22 @@ export class PathAlias {
     this.initCompletion();
     this.initDefinition();
     this.initCodeAction();
+    this.initSignature();
+  }
+
+  private initSignature() {
+    this._signature = new PathAliasSignatureHelpProvider();
+    this._ctx.subscriptions.push(
+      languages.registerSignatureHelpProvider(
+        [
+          { language: 'javascript', scheme: 'file' },
+          { language: 'vue', scheme: 'file' }
+        ],
+        this._signature,
+        ',',
+        '('
+      )
+    );
   }
 
   private updateStatInfo() {
