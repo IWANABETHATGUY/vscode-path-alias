@@ -9,8 +9,9 @@ import {
   CompletionItemKind,
   Disposable,
   workspace,
-  Range
+  Range,
 } from 'vscode';
+
 import { StatInfo, AliasStatTree } from './type';
 import { isObject, mostLikeAlias, normalizePath } from '../util/common';
 import * as path from 'path';
@@ -31,7 +32,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
     this._ignoreExtensionList =
       workspace.getConfiguration('pathAlias').get('ignoreExtensionList') || [];
     this.setStatMap(statMap);
-
+    // 当配置更新时，查看pathalias 配置有相关更新
     workspace.onDidChangeConfiguration(e => {
       if (e.affectsConfiguration('pathAlias.needExtension')) {
         this._needExtension = !!workspace
@@ -129,7 +130,10 @@ export class PathAliasCompletion implements CompletionItemProvider {
 
     return completionList;
   }
-  private importCompletion(document: TextDocument, position: Position): CompletionItem[] {
+  private importCompletion(
+    document: TextDocument,
+    position: Position,
+  ): CompletionItem[] {
     const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
     const content = document.getText();
     const zeroBasedPosition = document.offsetAt(position);
