@@ -14,7 +14,8 @@ import {
   JSDocTag,
   JSDocParameterTag,
   TypeChecker,
-  createLanguageService
+  createLanguageService,
+  createProgram
 } from 'typescript';
 
 interface IExportToken {
@@ -86,20 +87,20 @@ function getExportKeyword(
   }
 }
 
-function getSignature(fc: FunctionDeclaration): string[] {
-  // const checker: TypeChecker  = 
-  // const service = createLanguageService();
-  // const a = checker.getSignatureFromDeclaration(fc);
-  // const paramsList: string[] = fc.parameters.map(item => item.name.getText());
-  // const typeList: string[]  = Array.from({length: paramsList.length}).map(_ => 'any');
-  // if ((<any>fc).jsDoc && (<any>fc).jsDoc.length) {
-  //   const tagList: JSDocParameterTag[] = (<any>fc).jsDoc[0].tags.filter((tag: JSDocTag) => isJSDocParameterTag(tag));
-  //   for (let i = 0; i < typeList.length; i++) {
-  //     if (tagList[i]) {
-  //       typeList[i] = tagList[i].typeExpression!.type.getText()
-  //     }
-  //   }
-  // }
-  // debugger;
-  return [];
-}
+// function getSignature(fc: FunctionDeclaration): string[] {
+//   // const checker: TypeChecker  = 
+//   // const service = createLanguageService();
+//   // const a = checker.getSignatureFromDeclaration(fc);
+//   // const paramsList: string[] = fc.parameters.map(item => item.name.getText());
+//   // const typeList: string[]  = Array.from({length: paramsList.length}).map(_ => 'any');
+//   // if ((<any>fc).jsDoc && (<any>fc).jsDoc.length) {
+//   //   const tagList: JSDocParameterTag[] = (<any>fc).jsDoc[0].tags.filter((tag: JSDocTag) => isJSDocParameterTag(tag));
+//   //   for (let i = 0; i < typeList.length; i++) {
+//   //     if (tagList[i]) {
+//   //       typeList[i] = tagList[i].typeExpression!.type.getText()
+//   //     }
+//   //   }
+//   // }
+//   // debugger;
+//   return [];
+// }
