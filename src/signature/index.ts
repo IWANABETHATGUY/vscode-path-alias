@@ -6,8 +6,15 @@ import {
   CancellationToken,
   Disposable,
   window,
+  SignatureInformation,
+  ParameterInformation
 } from 'vscode';
-import { createMethodSignature, MethodSignature,  } from 'typescript'
+import { Nullable } from '../util/types';
+import { traverse, IExportToken } from '../util/traverseSourceFile';
+import { AliasStatTree } from '../completion/type';
+import { mostLikeAlias, normalizePath } from '../util/common';
+import * as fs from 'fs';
+import * as path from 'path';
 // import { definitionLocation } from './goDeclaration';
 // import {
 //   getParametersAndReturnType,
@@ -16,19 +23,65 @@ import { createMethodSignature, MethodSignature,  } from 'typescript'
 // } from './util';
 export interface SignatureHelpMap {
   id: string;
-  [prop:string]: string[] | string;
+  [prop: string]: string[] | string;
 }
 
 export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {
   private _disposable: Disposable;
-  constructor() {
+  private _statMap!: AliasStatTree;
+  private _aliasList: string[] = [];
+  private _functionTokenList: IExportToken[] = [];
+  constructor(statMap: AliasStatTree) {
     const subscriptions: Disposable[] = [];
-    window.onDidChangeActiveTextEditor((event) => {
+    this.setStatMap(statMap);
+    window.onDidChangeActiveTextEditor(event => {
       if (event) {
-        console.log(event.document.fileName);
+        this._functionTokenList = [];
+        const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
+        const document = event.document;
+        const content = document.getText();
+        let execResult: Nullable<RegExpExecArray> = null;
+        while ((execResult = importReg.exec(content))) {
+          const [, , , pathAlias] = execResult;
+          const mostLike = mostLikeAlias(
+            this._aliasList,
+            pathAlias.split('/')[0]
+          );
+          if (mostLike) {
+            const pathList = [
+              this._statMap[mostLike]['absolutePath'],
+              ...pathAlias.split('/').slice(1)
+            ];
+            let absolutePath = path.join(...pathList);
+            let extname = path.extname(absolutePath);
+            if (!extname) {
+              if (fs.existsSync(`${absolutePath}.js`)) {
+                extname = 'js';
+              } else if (fs.existsSync(`${absolutePath}.ts`)) {
+                extname = 'ts';
+              } else if (fs.existsSync(normalizePath(absolutePath))) {
+                absolutePath += '/index';
+                extname = 'js';
+              }
+            }
+            if (extname === 'js' || extname === 'ts') {
+              console.time('ast');
+              const absolutePathWithExtname = absolutePath + '.' + extname;
+              const file = fs.readFileSync(absolutePathWithExtname, {
+                encoding: 'utf8'
+              });
+              const result = traverse(absolutePath, file, true);
+              this._functionTokenList.push(...result);
+            }
+          }
+        }
       }
-    })
+    });
     this._disposable = Disposable.from(...subscriptions);
+  }
+  setStatMap(statMap: AliasStatTree) {
+    this._statMap = statMap;
+    this._aliasList = Object.keys(this._statMap).sort();
   }
   dispose() {
     this._disposable.dispose();
@@ -46,9 +99,32 @@ export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {
     if (!callerPos) {
       return null;
     }
-    const callerToken = document.getText(document.getWordRangeAtPosition(callerPos));
-    debugger;
-    return null;
+    const callerToken = document.getText(
+      document.getWordRangeAtPosition(callerPos)
+    );
+    try {
+      const signatures = this._functionTokenList.filter(
+        item => item.identifier === callerToken
+      );
+      const result = new SignatureHelp();
+      let si: SignatureInformation[] = signatures.map(item => {
+        const info: SignatureInformation = {
+          label: `${item.identifier} (${item.params!.join(', ')})`,
+          parameters: item.params!.map(p => new ParameterInformation(p))
+        };
+        return info;
+      });
+
+      result.signatures = si;
+      result.activeSignature = 0;
+      result.activeParameter = Math.min(
+        theCall.commas.length,
+        si[0].parameters.length - 1
+      );
+      return result;
+    } catch (e) {
+      return null;
+    }
     // try {
     //   let declarationText: string = (res.declarationlines || [])
     //     .join(' ')

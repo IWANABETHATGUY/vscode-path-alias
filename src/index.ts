@@ -63,7 +63,7 @@ export class PathAlias {
   }
 
   private initSignature() {
-    this._signature = new PathAliasSignatureHelpProvider();
+    this._signature = new PathAliasSignatureHelpProvider(this._statMap);
     this._ctx.subscriptions.push(
       languages.registerSignatureHelpProvider(
         [

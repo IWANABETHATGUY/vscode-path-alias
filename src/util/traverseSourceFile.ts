@@ -9,16 +9,14 @@ import {
   LineAndCharacter,
   SourceFileLike,
   FunctionDeclaration,
-  createMethodSignature,
-  isJSDocParameterTag,
-  JSDocTag,
   JSDocParameterTag,
-  TypeChecker,
-  createLanguageService,
-  createProgram
+  JSDocTag,
+  isJSDocParameterTag,
+  isArrowFunction,
+  ArrowFunction
 } from 'typescript';
 
-interface IExportToken {
+export interface IExportToken {
   identifier: string;
   description?: string;
   params?: string[];
@@ -26,7 +24,11 @@ interface IExportToken {
   kind: 'function' | 'variable';
 }
 
-export function traverse(filename: string, fileContent: string) {
+export function traverse(
+  filename: string,
+  fileContent: string,
+  needParams: boolean = false
+) {
   const exportKeywordList: IExportToken[] = [];
   const result = createSourceFile(
     filename,
@@ -34,19 +36,20 @@ export function traverse(filename: string, fileContent: string) {
     ScriptTarget.ES2015,
     true
   );
-  _traverse(result, exportKeywordList, result);
+  _traverse(result, exportKeywordList, result, needParams);
   return exportKeywordList;
 }
 function _traverse(
   node: Node,
   tokenList: IExportToken[],
   source: SourceFileLike,
+  needParams: boolean,
   depth = 0
 ): void {
-  getExportKeyword(node, tokenList, source);
+  getExportKeyword(node, tokenList, source, needParams);
   if (depth <= 1) {
     node.forEachChild((n: Node) => {
-      _traverse(n, tokenList, source, depth + 1);
+      _traverse(n, tokenList, source, needParams, depth + 1);
     });
   }
 }
@@ -55,52 +58,80 @@ function getExportKeyword(
   node: Node,
   tokenList: IExportToken[],
   source: SourceFileLike,
-  needParams: boolean = true
+  needParams: boolean = false
 ) {
-  if (node.modifiers && node.modifiers[0].kind === SyntaxKind.ExportKeyword) {
-    if (isVariableStatement(node)) {
-      node.declarationList.declarations.forEach(decleration => {
-        tokenList.push({
-          identifier: decleration.name.getText(),
-          description: node.getText(),
-          position: getLineAndCharacterOfPosition(source, decleration.pos),
-          kind: 'variable'
+  try {
+    if (node.modifiers && node.modifiers[0].kind === SyntaxKind.ExportKeyword) {
+      if (isVariableStatement(node)) {
+        node.declarationList.declarations.forEach(decleration => {
+          const exportToken: IExportToken = {
+            identifier: decleration.name.getText(),
+            description: node.getText(),
+            position: getLineAndCharacterOfPosition(source, decleration.pos),
+            kind: 'variable'
+          };
+          if (
+            decleration.initializer &&
+            needParams &&
+            (isFunctionDeclaration(decleration.initializer) ||
+              isArrowFunction(decleration.initializer))
+          ) {
+            exportToken.params = getSignature(decleration.initializer);
+          }
+          tokenList.push(exportToken);
         });
-      });
-    } else if (isFunctionDeclaration(node)) {
-      const position = getLineAndCharacterOfPosition(
-        source,
-        node.name!.getStart()
-      );
-      const exportToken: IExportToken = {
-        identifier: node.name!.getText(),
-        position,
-        description: node.getText(),
-        kind: 'function'
-      };
-      if (needParams) {
-        exportToken.params = getSignature(node);
+      } else if (isFunctionDeclaration(node) || isArrowFunction(node)) {
+        const position = getLineAndCharacterOfPosition(
+          source,
+          node.name!.getStart()
+        );
+        const exportToken: IExportToken = {
+          identifier: node.name!.getText(),
+          position,
+          description: node.getText(),
+          kind: 'function'
+        };
+        if (needParams) {
+          exportToken.params = getSignature(node);
+        }
+        tokenList.push(exportToken);
       }
-      tokenList.push(exportToken);
-
     }
+  } catch (error) {
+    debugger;
   }
 }
 
-// function getSignature(fc: FunctionDeclaration): string[] {
-//   // const checker: TypeChecker  = 
-//   // const service = createLanguageService();
-//   // const a = checker.getSignatureFromDeclaration(fc);
-//   // const paramsList: string[] = fc.parameters.map(item => item.name.getText());
-//   // const typeList: string[]  = Array.from({length: paramsList.length}).map(_ => 'any');
-//   // if ((<any>fc).jsDoc && (<any>fc).jsDoc.length) {
-//   //   const tagList: JSDocParameterTag[] = (<any>fc).jsDoc[0].tags.filter((tag: JSDocTag) => isJSDocParameterTag(tag));
-//   //   for (let i = 0; i < typeList.length; i++) {
-//   //     if (tagList[i]) {
-//   //       typeList[i] = tagList[i].typeExpression!.type.getText()
-//   //     }
-//   //   }
-//   // }
-//   // debugger;
-//   return [];
-// }
+function getSignature(fc: FunctionDeclaration | ArrowFunction): string[] {
+  const paramsList: string[] = fc.parameters.map(item => item.name.getText());
+  const typeList: string[] = Array.from({ length: paramsList.length }).map(
+    _ => 'any'
+  );
+  try {
+    if ((<any>fc).jsDoc && (<any>fc).jsDoc.length) {
+      const tagList: JSDocParameterTag[] = (<any>fc).jsDoc[0].tags.filter(
+        (tag: JSDocTag) => isJSDocParameterTag(tag)
+      );
+      for (let i = 0; i < typeList.length; i++) {
+        if (tagList[i]) {
+          typeList[i] = tagList[i].typeExpression!.type.getText();
+        }
+      }
+    }
+    return paramsList.reduce(
+      (pre, cur, index) => {
+        pre.push(`${cur}: ${typeList[index]}`);
+        return pre;
+      },
+      <string[]>[]
+    );
+  } catch (error) {
+    return paramsList.reduce(
+      (pre, cur, index) => {
+        pre.push(`${cur}: ${typeList[index]}`);
+        return pre;
+      },
+      <string[]>[]
+    );
+  }
+}
