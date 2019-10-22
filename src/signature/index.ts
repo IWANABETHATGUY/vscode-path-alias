@@ -31,60 +31,63 @@ export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {
   private _statMap!: AliasStatTree;
   private _aliasList: string[] = [];
   private _functionTokenList: IExportToken[] = [];
+  private _aliasPathList: string[] = [];
   constructor(statMap: AliasStatTree) {
     const subscriptions: Disposable[] = [];
     this.setStatMap(statMap);
     window.onDidChangeActiveTextEditor(event => {
       if (event) {
-        this._functionTokenList = [];
-        const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
-        const document = event.document;
-        const content = document.getText();
-        let execResult: Nullable<RegExpExecArray> = null;
-        while ((execResult = importReg.exec(content))) {
-          const [, , , pathAlias] = execResult;
-          const mostLike = mostLikeAlias(
-            this._aliasList,
-            pathAlias.split('/')[0]
-          );
-          if (mostLike) {
-            const pathList = [
-              this._statMap[mostLike]['absolutePath'],
-              ...pathAlias.split('/').slice(1)
-            ];
-            let absolutePath = path.join(...pathList);
-            let extname = path.extname(absolutePath);
-            if (!extname) {
-              if (fs.existsSync(`${absolutePath}.js`)) {
-                extname = 'js';
-              } else if (fs.existsSync(`${absolutePath}.ts`)) {
-                extname = 'ts';
-              } else if (fs.existsSync(normalizePath(absolutePath))) {
-                absolutePath += '/index';
-                extname = 'js';
-              }
-            }
-            if (extname === 'js' || extname === 'ts') {
-              console.time('ast');
-              const absolutePathWithExtname = absolutePath + '.' + extname;
-              const file = fs.readFileSync(absolutePathWithExtname, {
-                encoding: 'utf8'
-              });
-              const result = traverse(absolutePath, file, true);
-              this._functionTokenList.push(...result);
-            }
-          }
-        }
+        this.recollectDeppendencies(event.document);
       }
     });
     this._disposable = Disposable.from(...subscriptions);
   }
+
   setStatMap(statMap: AliasStatTree) {
     this._statMap = statMap;
     this._aliasList = Object.keys(this._statMap).sort();
   }
   dispose() {
     this._disposable.dispose();
+  }
+  private recollectDeppendencies(document: TextDocument) {
+    this._functionTokenList = [];
+    this._aliasPathList = [];
+    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
+    const content = document.getText();
+    let execResult: Nullable<RegExpExecArray> = null;
+    while ((execResult = importReg.exec(content))) {
+      const [, , , pathAlias] = execResult;
+      this._aliasList.push(pathAlias);
+      const mostLike = mostLikeAlias(this._aliasList, pathAlias.split('/')[0]);
+      if (mostLike) {
+        const pathList = [
+          this._statMap[mostLike]['absolutePath'],
+          ...pathAlias.split('/').slice(1)
+        ];
+        let absolutePath = path.join(...pathList);
+        let extname = path.extname(absolutePath);
+        if (!extname) {
+          if (fs.existsSync(`${absolutePath}.js`)) {
+            extname = 'js';
+          } else if (fs.existsSync(`${absolutePath}.ts`)) {
+            extname = 'ts';
+          } else if (fs.existsSync(normalizePath(absolutePath))) {
+            absolutePath += '/index';
+            extname = 'js';
+          }
+        }
+        if (extname === 'js' || extname === 'ts') {
+          console.time('ast');
+          const absolutePathWithExtname = absolutePath + '.' + extname;
+          const file = fs.readFileSync(absolutePathWithExtname, {
+            encoding: 'utf8'
+          });
+          const result = traverse(absolutePath, file, true);
+          this._functionTokenList.push(...result);
+        }
+      }
+    }
   }
   public async provideSignatureHelp(
     document: TextDocument,
@@ -106,6 +109,19 @@ export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {
       const signatures = this._functionTokenList.filter(
         item => item.identifier === callerToken
       );
+      if (!signatures.length) {
+        const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
+        const content = document.getText();
+        let execResult: Nullable<RegExpExecArray> = null;
+        while ((execResult = importReg.exec(content))) {
+          const [, , , pathAlias] = execResult;
+          if (this._aliasPathList.indexOf(pathAlias) === -1) {
+            this.recollectDeppendencies(document);
+            break;
+          }
+        }
+        return null;
+      }
       const result = new SignatureHelp();
       let si: SignatureInformation[] = signatures.map(item => {
         const info: SignatureInformation = {
