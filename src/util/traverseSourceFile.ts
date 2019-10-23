@@ -8,12 +8,7 @@ import {
   getLineAndCharacterOfPosition,
   LineAndCharacter,
   SourceFileLike,
-  FunctionDeclaration,
-  JSDocParameterTag,
-  JSDocTag,
-  isJSDocParameterTag,
-  isArrowFunction,
-  ArrowFunction
+  isArrowFunction
 } from 'typescript';
 
 export interface IExportToken {
@@ -46,7 +41,7 @@ function _traverse(
   needParams: boolean,
   depth = 0
 ): void {
-  getExportKeyword(node, tokenList, source, needParams);
+  getExportKeyword(node, tokenList, source);
   if (depth <= 1) {
     node.forEachChild((n: Node) => {
       _traverse(n, tokenList, source, needParams, depth + 1);
@@ -57,8 +52,7 @@ function _traverse(
 function getExportKeyword(
   node: Node,
   tokenList: IExportToken[],
-  source: SourceFileLike,
-  needParams: boolean = false
+  source: SourceFileLike
 ) {
   try {
     if (node.modifiers && node.modifiers[0].kind === SyntaxKind.ExportKeyword) {
@@ -70,14 +64,14 @@ function getExportKeyword(
             position: getLineAndCharacterOfPosition(source, decleration.pos),
             kind: 'variable'
           };
-          if (
-            decleration.initializer &&
-            needParams &&
-            (isFunctionDeclaration(decleration.initializer) ||
-              isArrowFunction(decleration.initializer))
-          ) {
-            exportToken.params = getSignature(decleration.initializer);
-          }
+          // if (
+          //   decleration.initializer &&
+          //   needParams &&
+          //   (isFunctionDeclaration(decleration.initializer) ||
+          //     isArrowFunction(decleration.initializer))
+          // ) {
+          //   exportToken.params = getSignature(decleration.initializer);
+          // }
           tokenList.push(exportToken);
         });
       } else if (isFunctionDeclaration(node) || isArrowFunction(node)) {
@@ -91,9 +85,6 @@ function getExportKeyword(
           description: node.getText(),
           kind: 'function'
         };
-        if (needParams) {
-          exportToken.params = getSignature(node);
-        }
         tokenList.push(exportToken);
       }
     }
@@ -102,36 +93,36 @@ function getExportKeyword(
   }
 }
 
-function getSignature(fc: FunctionDeclaration | ArrowFunction): string[] {
-  const paramsList: string[] = fc.parameters.map(item => item.name.getText());
-  const typeList: string[] = Array.from({ length: paramsList.length }).map(
-    _ => 'any'
-  );
-  try {
-    if ((<any>fc).jsDoc && (<any>fc).jsDoc.length) {
-      const tagList: JSDocParameterTag[] = (<any>fc).jsDoc[0].tags.filter(
-        (tag: JSDocTag) => isJSDocParameterTag(tag)
-      );
-      for (let i = 0; i < typeList.length; i++) {
-        if (tagList[i]) {
-          typeList[i] = tagList[i].typeExpression!.type.getText();
-        }
-      }
-    }
-    return paramsList.reduce(
-      (pre, cur, index) => {
-        pre.push(`${cur}: ${typeList[index]}`);
-        return pre;
-      },
-      <string[]>[]
-    );
-  } catch (error) {
-    return paramsList.reduce(
-      (pre, cur, index) => {
-        pre.push(`${cur}: ${typeList[index]}`);
-        return pre;
-      },
-      <string[]>[]
-    );
-  }
-}
+// function getSignature(fc: FunctionDeclaration | ArrowFunction): string[] {
+//   const paramsList: string[] = fc.parameters.map(item => item.name.getText());
+//   const typeList: string[] = Array.from({ length: paramsList.length }).map(
+//     _ => 'any'
+//   );
+//   try {
+//     if ((<any>fc).jsDoc && (<any>fc).jsDoc.length) {
+//       const tagList: JSDocParameterTag[] = (<any>fc).jsDoc[0].tags.filter(
+//         (tag: JSDocTag) => isJSDocParameterTag(tag)
+//       );
+//       for (let i = 0; i < typeList.length; i++) {
+//         if (tagList[i]) {
+//           typeList[i] = tagList[i].typeExpression!.type.getText();
+//         }
+//       }
+//     }
+//     return paramsList.reduce(
+//       (pre, cur, index) => {
+//         pre.push(`${cur}: ${typeList[index]}`);
+//         return pre;
+//       },
+//       <string[]>[]
+//     );
+//   } catch (error) {
+//     return paramsList.reduce(
+//       (pre, cur, index) => {
+//         pre.push(`${cur}: ${typeList[index]}`);
+//         return pre;
+//       },
+//       <string[]>[]
+//     );
+//   }
+// }

@@ -10,11 +10,11 @@ import {
   ParameterInformation
 } from 'vscode';
 import { Nullable } from '../util/types';
-import { traverse, IExportToken } from '../util/traverseSourceFile';
 import { AliasStatTree } from '../completion/type';
 import { mostLikeAlias, normalizePath } from '../util/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import { IFunctionSignature, getFuncitonSignatureFromFiles } from '../util/getSignatureFromFile2';
 // import { definitionLocation } from './goDeclaration';
 // import {
 //   getParametersAndReturnType,
@@ -30,8 +30,9 @@ export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {
   private _disposable: Disposable;
   private _statMap!: AliasStatTree;
   private _aliasList: string[] = [];
-  private _functionTokenList: IExportToken[] = [];
+  private _functionTokenList: IFunctionSignature[] = [];
   private _aliasPathList: string[] = [];
+  private _absolutePathList: string[] = [];
   constructor(statMap: AliasStatTree) {
     const subscriptions: Disposable[] = [];
     this.setStatMap(statMap);
@@ -53,12 +54,13 @@ export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {
   private recollectDeppendencies(document: TextDocument) {
     this._functionTokenList = [];
     this._aliasPathList = [];
+    this._absolutePathList = [];
     const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
     const content = document.getText();
     let execResult: Nullable<RegExpExecArray> = null;
     while ((execResult = importReg.exec(content))) {
       const [, , , pathAlias] = execResult;
-      this._aliasList.push(pathAlias);
+      this._aliasPathList.push(pathAlias);
       const mostLike = mostLikeAlias(this._aliasList, pathAlias.split('/')[0]);
       if (mostLike) {
         const pathList = [
@@ -80,14 +82,14 @@ export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {
         if (extname === 'js' || extname === 'ts') {
           console.time('ast');
           const absolutePathWithExtname = absolutePath + '.' + extname;
-          const file = fs.readFileSync(absolutePathWithExtname, {
-            encoding: 'utf8'
-          });
-          const result = traverse(absolutePath, file, true);
-          this._functionTokenList.push(...result);
+          // const file = fs.readFileSync(absolutePathWithExtname, {
+          //   encoding: 'utf8'
+          // }).toString();
+          this._absolutePathList.push(absolutePathWithExtname);
         }
       }
     }
+    this._functionTokenList = getFuncitonSignatureFromFiles(this._absolutePathList);
   }
   public async provideSignatureHelp(
     document: TextDocument,
@@ -107,7 +109,7 @@ export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {
     );
     try {
       const signatures = this._functionTokenList.filter(
-        item => item.identifier === callerToken
+        item => item.name === callerToken
       );
       if (!signatures.length) {
         const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
@@ -124,9 +126,11 @@ export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {
       }
       const result = new SignatureHelp();
       let si: SignatureInformation[] = signatures.map(item => {
+        const parameters = (item.parameters || []).map(parameter => `${parameter.name}${parameter.optional ? '?' : ''}: ${parameter.type}`)
         const info: SignatureInformation = {
-          label: `${item.identifier} (${item.params!.join(', ')})`,
-          parameters: item.params!.map(p => new ParameterInformation(p))
+          documentation: item.documentation,
+          label: `${item.name} (${parameters.join(', ')}): ${item.returnType}`,
+          parameters: parameters.map(p => new ParameterInformation(p))
         };
         return info;
       });

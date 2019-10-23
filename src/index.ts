@@ -86,7 +86,6 @@ export class PathAlias {
   private initStatInfo() {
     this._aliasMap =
       workspace.getConfiguration('pathAlias').get('aliasMap') || {};
-
     this._aliasMap = {
       ...this._aliasMap,
       ...getAliasConfig(workspace.rootPath || '')
