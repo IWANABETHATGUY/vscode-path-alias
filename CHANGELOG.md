@@ -1,4 +1,6 @@
 # Change Log
+- 0.9.0(2019-10-24)
+  - 提供对从路径别名中引入的函数的signature help 
 - 0.8.0(2019-10-16)
   - 添加配置文件可以通过package.json 字段pathalias 或者在根目录下的.pathaliasrc(json)配置路径别名
 - 0.7.0(2019-10-14)

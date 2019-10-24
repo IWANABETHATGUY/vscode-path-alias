@@ -14,7 +14,7 @@ import { AliasStatTree } from '../completion/type';
 import { mostLikeAlias, normalizePath } from '../util/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import { IFunctionSignature, getFuncitonSignatureFromFiles } from '../util/getSignatureFromFile2';
+import { IFunctionSignature, getFuncitonSignatureFromFiles } from '../util/getSignatureFromFile';
 // import { definitionLocation } from './goDeclaration';
 // import {
 //   getParametersAndReturnType,
