@@ -7,7 +7,7 @@ import {
 } from 'vscode';
 import * as fs from 'fs';
 
-import { PathAliasCompletion } from './completion';
+import { PathAliasCompletion, ImportFunctionCompletion } from './completion';
 import { PathAliasDefinition } from './defination';
 import { PathAliasTagDefinition } from './defination/tag';
 import { AliasMap, StatInfo, AliasStatTree } from './completion/type';
@@ -18,7 +18,10 @@ import { debounce, mostLikeAlias, normalizePath } from './util/common';
 import { generateWatcher } from './util/watcher';
 import { PathAliasCodeActionProvider } from './codeAction';
 import { getAliasConfig } from './util/config';
-import { PathAliasSignatureHelpProvider, SignatureHelpCollectItem } from './signature';
+import {
+  PathAliasSignatureHelpProvider,
+  SignatureHelpCollectItem
+} from './signature';
 import { Nullable } from './util/types';
 import {
   IFunctionSignature,
@@ -39,6 +42,7 @@ export class PathAlias {
   private _importAbsolutePathList: string[] = [];
   private _importAliasPathList: string[] = [];
   private _functionTokenList: SignatureHelpCollectItem[] = [];
+  private _importCompletion!: ImportFunctionCompletion;
   constructor(ctx: ExtensionContext) {
     console.time('init');
     this._ctx = ctx;
@@ -124,9 +128,19 @@ export class PathAlias {
     this._functionTokenList = getFuncitonSignatureFromFiles(
       this._importAbsolutePathList
     );
-    this._signature.setFunctionTokenList(this._functionTokenList.reduce((pre, cur) => {
-      return pre.concat(cur.functionTokenList);
-    }, <IFunctionSignature[]>[]));
+    this._importCompletion.setFunctionTokenListAndPathList(
+      this._functionTokenList,
+      this._importAbsolutePathList,
+      this._importAliasPathList
+    );
+    this._signature.setFunctionTokenList(
+      this._functionTokenList.reduce(
+        (pre, cur) => {
+          return pre.concat(cur.functionTokenList);
+        },
+        <IFunctionSignature[]>[]
+      )
+    );
   }
 
   private init() {
@@ -202,7 +216,7 @@ export class PathAlias {
   }
   private initCompletion() {
     this._completion = new PathAliasCompletion(this._statMap, this._aliasList);
-
+    this._importCompletion = new ImportFunctionCompletion();
     this._ctx.subscriptions.push(
       languages.registerCompletionItemProvider(
         [
@@ -213,6 +227,13 @@ export class PathAlias {
         '/',
         ',',
         '{'
+      ),
+      languages.registerCompletionItemProvider(
+        [
+          { language: 'javascript', scheme: 'file' },
+          { language: 'vue', scheme: 'file' }
+        ],
+        this._importCompletion
       )
     );
   }
