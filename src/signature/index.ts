@@ -5,16 +5,12 @@ import {
   Position,
   CancellationToken,
   Disposable,
-  window,
   SignatureInformation,
   ParameterInformation
 } from 'vscode';
 import { Nullable } from '../util/types';
-import { AliasStatTree } from '../completion/type';
-import { mostLikeAlias, normalizePath } from '../util/common';
-import * as fs from 'fs';
-import * as path from 'path';
-import { IFunctionSignature, getFuncitonSignatureFromFiles } from '../util/getSignatureFromFile';
+import { IFunctionSignature,  } from '../util/getSignatureFromFile';
+import { eventBus } from '..';
 export interface SignatureHelpMap {
   id: string;
   [prop: string]: string[] | string;
@@ -22,69 +18,21 @@ export interface SignatureHelpMap {
 
 export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {
   private _disposable: Disposable;
-  private _statMap!: AliasStatTree;
-  private _aliasList: string[] = [];
   private _functionTokenList: IFunctionSignature[] = [];
-  private _aliasPathList: string[] = [];
-  private _absolutePathList: string[] = [];
-  constructor(statMap: AliasStatTree, aliasList: string[]) {
+  private _importAliasPathList: string[] = [];
+  constructor() {
     const subscriptions: Disposable[] = [];
-    this.setStatMapAndAliasList(statMap, aliasList);
-    window.onDidChangeActiveTextEditor(event => {
-      if (event) {
-        this.recollectDeppendencies(event.document);
-      }
-    });
     this._disposable = Disposable.from(...subscriptions);
   }
 
-  setStatMapAndAliasList(statMap: AliasStatTree, aliasList: string[]) {
-    this._statMap = statMap;
-    this._aliasList = aliasList;
-  }
   dispose() {
     this._disposable.dispose();
   }
-  private recollectDeppendencies(document: TextDocument) {
-    this._functionTokenList = [];
-    this._aliasPathList = [];
-    this._absolutePathList = [];
-    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
-    const content = document.getText();
-    let execResult: Nullable<RegExpExecArray> = null;
-    while ((execResult = importReg.exec(content))) {
-      const [, , , pathAlias] = execResult;
-      this._aliasPathList.push(pathAlias);
-      const mostLike = mostLikeAlias(this._aliasList, pathAlias.split('/')[0]);
-      if (mostLike) {
-        const pathList = [
-          this._statMap[mostLike]['absolutePath'],
-          ...pathAlias.split('/').slice(1)
-        ];
-        let absolutePath = path.join(...pathList);
-        let extname = path.extname(absolutePath);
-        if (!extname) {
-          if (fs.existsSync(`${absolutePath}.js`)) {
-            extname = 'js';
-          } else if (fs.existsSync(`${absolutePath}.ts`)) {
-            extname = 'ts';
-          } else if (fs.existsSync(normalizePath(absolutePath))) {
-            absolutePath += '/index';
-            extname = 'js';
-          }
-        }
-        if (extname === 'js' || extname === 'ts') {
-          console.time('ast');
-          const absolutePathWithExtname = absolutePath + '.' + extname;
-          // const file = fs.readFileSync(absolutePathWithExtname, {
-          //   encoding: 'utf8'
-          // }).toString();
-          this._absolutePathList.push(absolutePathWithExtname);
-        }
-      }
-    }
-    this._functionTokenList = getFuncitonSignatureFromFiles(this._absolutePathList);
+
+  public setFunctionTokenList(functionList: IFunctionSignature[]) {
+    this._functionTokenList = functionList;
   }
+
   public async provideSignatureHelp(
     document: TextDocument,
     position: Position,
@@ -111,8 +59,9 @@ export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {
         let execResult: Nullable<RegExpExecArray> = null;
         while ((execResult = importReg.exec(content))) {
           const [, , , pathAlias] = execResult;
-          if (this._aliasPathList.indexOf(pathAlias) === -1) {
-            this.recollectDeppendencies(document);
+          if (this._importAliasPathList.indexOf(pathAlias) === -1) {
+            // this.recollectDeppendencies(document);
+            eventBus.emit('recollect', document)
             break;
           }
         }
