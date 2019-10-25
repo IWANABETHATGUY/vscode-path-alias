@@ -15,12 +15,6 @@ import { mostLikeAlias, normalizePath } from '../util/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { IFunctionSignature, getFuncitonSignatureFromFiles } from '../util/getSignatureFromFile';
-// import { definitionLocation } from './goDeclaration';
-// import {
-//   getParametersAndReturnType,
-//   isPositionInString,
-//   isPositionInComment
-// } from './util';
 export interface SignatureHelpMap {
   id: string;
   [prop: string]: string[] | string;
@@ -145,46 +139,6 @@ export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {
     } catch (e) {
       return null;
     }
-    // try {
-    //   let declarationText: string = (res.declarationlines || [])
-    //     .join(' ')
-    //     .trim();
-    //   if (!declarationText) {
-    //     return null;
-    //   }
-    //   const result = new SignatureHelp();
-    //   let sig: string;
-    //   let si: SignatureInformation;
-    //   if (res.toolUsed === 'godef') {
-    //     // declaration is of the form "Add func(a int, b int) int"
-    //     const nameEnd = declarationText.indexOf(' ');
-    //     const sigStart = nameEnd + 5; // ' func'
-    //     const funcName = declarationText.substring(0, nameEnd);
-    //     sig = declarationText.substring(sigStart);
-    //     si = new SignatureInformation(funcName + sig, res.doc);
-    //   } else if (res.toolUsed === 'gogetdoc') {
-    //     // declaration is of the form "func Add(a int, b int) int"
-    //     declarationText = declarationText.substring(5);
-    //     const funcNameStart = declarationText.indexOf(res.name + '('); // Find 'functionname(' to remove anything before it
-    //     if (funcNameStart > 0) {
-    //       declarationText = declarationText.substring(funcNameStart);
-    //     }
-    //     si = new SignatureInformation(declarationText, res.doc);
-    //     sig = declarationText.substring(res.name.length);
-    //   }
-    //   si.parameters = getParametersAndReturnType(sig).params.map(
-    //     paramText => new ParameterInformation(paramText)
-    //   );
-    //   result.signatures = [si];
-    //   result.activeSignature = 0;
-    //   result.activeParameter = Math.min(
-    //     theCall.commas.length,
-    //     si.parameters.length - 1
-    //   );
-    //   return result;
-    // } catch (e) {
-    //   return null;
-    // }
   }
   private previousTokenPosition(
     document: TextDocument,
