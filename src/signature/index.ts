@@ -11,9 +11,10 @@ import {
 import { Nullable } from '../util/types';
 import { IFunctionSignature,  } from '../util/getSignatureFromFile';
 import { eventBus } from '..';
-export interface SignatureHelpMap {
+
+export interface SignatureHelpCollectItem {
   id: string;
-  [prop: string]: string[] | string;
+  functionTokenList: IFunctionSignature[]
 }
 
 export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {

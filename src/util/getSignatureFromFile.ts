@@ -1,4 +1,6 @@
 import * as ts from 'typescript';
+import { SignatureHelpCollectItem } from '../signature';
+import { Nullable } from './types';
 // import * as fs from "fs";
 
 export interface IFunctionSignature {
@@ -28,20 +30,23 @@ export function getFuncitonSignatureFromFiles(files: string[]) {
 function generateDocumentation(
   fileNames: string[],
   options: ts.CompilerOptions
-): IFunctionSignature[] {
+): SignatureHelpCollectItem[] {
   // Build a program using the set of root file names in fileNames
   let program = ts.createProgram(fileNames, options);
   // Get the checker, we will use it to find more about classes
   let checker = program.getTypeChecker();
 
-  let output: IFunctionSignature[] = [];
+  let output: SignatureHelpCollectItem[] = [];
+  let lastSignatureHelpCollectItem: Nullable<SignatureHelpCollectItem> = null;
   // Visit every sourceFile in the program
   const sourceFiles = program.getSourceFiles();
   for (const sourceFile of sourceFiles) {
     if (!sourceFile.isDeclarationFile) {
       // Walk the tree to search for classes
       try {
+        lastSignatureHelpCollectItem = {id: sourceFile.fileName, functionTokenList: []};
         ts.forEachChild(sourceFile, visit);
+        output.push(lastSignatureHelpCollectItem);
       } catch (err) {}
     }
   }
@@ -62,7 +67,7 @@ function generateDocumentation(
         // This is a top level class, get its symbol
         let symbol = checker.getSymbolAtLocation(node.name);
         if (symbol) {
-          output.push(serializeFunction(symbol));
+          lastSignatureHelpCollectItem!.functionTokenList.push(serializeFunction(symbol));
         }
         // No need to walk any further, class expressions/inner declarations cannot be exported
       }

@@ -1,4 +1,10 @@
-import { ExtensionContext, workspace, languages, TextDocument, window } from 'vscode';
+import {
+  ExtensionContext,
+  workspace,
+  languages,
+  TextDocument,
+  window
+} from 'vscode';
 import * as fs from 'fs';
 
 import { PathAliasCompletion } from './completion';
@@ -12,9 +18,12 @@ import { debounce, mostLikeAlias, normalizePath } from './util/common';
 import { generateWatcher } from './util/watcher';
 import { PathAliasCodeActionProvider } from './codeAction';
 import { getAliasConfig } from './util/config';
-import { PathAliasSignatureHelpProvider } from './signature';
+import { PathAliasSignatureHelpProvider, SignatureHelpCollectItem } from './signature';
 import { Nullable } from './util/types';
-import { IFunctionSignature, getFuncitonSignatureFromFiles } from './util/getSignatureFromFile';
+import {
+  IFunctionSignature,
+  getFuncitonSignatureFromFiles
+} from './util/getSignatureFromFile';
 
 export const eventBus = new EventEmitter();
 export class PathAlias {
@@ -27,9 +36,9 @@ export class PathAlias {
   private _tagDefination!: PathAliasTagDefinition;
   private _signature!: PathAliasSignatureHelpProvider;
   private _aliasList: string[] = [];
-  private _absolutePathList: string[] = [];
-  private _aliasPathList: string[] = [];
-  private _functionTokenList: IFunctionSignature[] = [];
+  private _importAbsolutePathList: string[] = [];
+  private _importAliasPathList: string[] = [];
+  private _functionTokenList: SignatureHelpCollectItem[] = [];
   constructor(ctx: ExtensionContext) {
     console.time('init');
     this._ctx = ctx;
@@ -50,40 +59,42 @@ export class PathAlias {
     const handler = debounce(() => {
       this.updateStatInfo();
     }, 1000);
-    eventBus.on('file-change', path => {
-      const needToRestart = Object.keys(this._aliasMap)
-        .map(key => {
-          return this._aliasMap[key].replace(
-            '${cwd}',
-            workspace.rootPath || ''
-          );
-        })
-        .some(aliasPath => {
-          return path.startsWith(aliasPath);
-        });
-      if (needToRestart) {
-        handler();
-      }
-    }).on('recollect', (document: TextDocument) => {
-      if (document) {
-        this.recollectDeppendencies(document);
-      }
-    })
+    eventBus
+      .on('file-change', path => {
+        const needToRestart = Object.keys(this._aliasMap)
+          .map(key => {
+            return this._aliasMap[key].replace(
+              '${cwd}',
+              workspace.rootPath || ''
+            );
+          })
+          .some(aliasPath => {
+            return path.startsWith(aliasPath);
+          });
+        if (needToRestart) {
+          handler();
+        }
+      })
+      .on('recollect', (document: TextDocument) => {
+        if (document) {
+          this.recollectDeppendencies(document);
+        }
+      });
     console.timeEnd('init');
   }
 
   private recollectDeppendencies(document: TextDocument) {
     this._functionTokenList = [];
-    this._aliasPathList = [];
-    this._absolutePathList = [];
+    this._importAliasPathList = [];
+    this._importAbsolutePathList = [];
     const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
     const content = document.getText();
     let execResult: Nullable<RegExpExecArray> = null;
     while ((execResult = importReg.exec(content))) {
       const [, , , pathAlias] = execResult;
-      this._aliasPathList.push(pathAlias);
       const mostLike = mostLikeAlias(this._aliasList, pathAlias.split('/')[0]);
       if (mostLike) {
+        this._importAliasPathList.push(pathAlias);
         const pathList = [
           this._statMap[mostLike]['absolutePath'],
           ...pathAlias.split('/').slice(1)
@@ -106,15 +117,18 @@ export class PathAlias {
           // const file = fs.readFileSync(absolutePathWithExtname, {
           //   encoding: 'utf8'
           // }).toString();
-          this._absolutePathList.push(absolutePathWithExtname);
+          this._importAbsolutePathList.push(absolutePathWithExtname);
         }
       }
     }
-    this._functionTokenList = getFuncitonSignatureFromFiles(this._absolutePathList);
-    this._signature.setFunctionTokenList(this._functionTokenList);
-    
+    this._functionTokenList = getFuncitonSignatureFromFiles(
+      this._importAbsolutePathList
+    );
+    this._signature.setFunctionTokenList(this._functionTokenList.reduce((pre, cur) => {
+      return pre.concat(cur.functionTokenList);
+    }, <IFunctionSignature[]>[]));
   }
-  
+
   private init() {
     this.initStatInfo();
     this.initCompletion();
@@ -205,7 +219,10 @@ export class PathAlias {
 
   private initDefinition() {
     this._defination = new PathAliasDefinition(this._statMap, this._aliasList);
-    this._tagDefination = new PathAliasTagDefinition(this._statMap, this._aliasList);
+    this._tagDefination = new PathAliasTagDefinition(
+      this._statMap,
+      this._aliasList
+    );
     this._ctx.subscriptions.push(
       languages.registerDefinitionProvider(
         [
