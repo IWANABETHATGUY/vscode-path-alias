@@ -27,9 +27,9 @@ export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {
   private _functionTokenList: IFunctionSignature[] = [];
   private _aliasPathList: string[] = [];
   private _absolutePathList: string[] = [];
-  constructor(statMap: AliasStatTree) {
+  constructor(statMap: AliasStatTree, aliasList: string[]) {
     const subscriptions: Disposable[] = [];
-    this.setStatMap(statMap);
+    this.setStatMapAndAliasList(statMap, aliasList);
     window.onDidChangeActiveTextEditor(event => {
       if (event) {
         this.recollectDeppendencies(event.document);
@@ -38,9 +38,9 @@ export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {
     this._disposable = Disposable.from(...subscriptions);
   }
 
-  setStatMap(statMap: AliasStatTree) {
+  setStatMapAndAliasList(statMap: AliasStatTree, aliasList: string[]) {
     this._statMap = statMap;
-    this._aliasList = Object.keys(this._statMap).sort();
+    this._aliasList = aliasList;
   }
   dispose() {
     this._disposable.dispose();

@@ -21,6 +21,7 @@ export class PathAlias {
   private _codeAction!: PathAliasCodeActionProvider;
   private _tagDefination!: PathAliasTagDefinition;
   private _signature!: PathAliasSignatureHelpProvider;
+  private _aliasList: string[] = [];
   constructor(ctx: ExtensionContext) {
     console.time('init');
     this._ctx = ctx;
@@ -63,7 +64,7 @@ export class PathAlias {
   }
 
   private initSignature() {
-    this._signature = new PathAliasSignatureHelpProvider(this._statMap);
+    this._signature = new PathAliasSignatureHelpProvider(this._statMap, this._aliasList);
     this._ctx.subscriptions.push(
       languages.registerSignatureHelpProvider(
         [
@@ -79,8 +80,10 @@ export class PathAlias {
 
   private updateStatInfo() {
     this.initStatInfo();
-    this._completion.setStatMap(this._statMap);
-    this._defination.setStatMap(this._statMap);
+    this._completion.setStatMapAndAliasList(this._statMap, this._aliasList);
+    this._defination.setStatMapAndAliasList(this._statMap, this._aliasList);
+    this._tagDefination.setStatMapAndAliasList(this._statMap, this._aliasList);
+    this._signature.setStatMapAndAliasList(this._statMap, this._aliasList);
   }
 
   private initStatInfo() {
@@ -110,6 +113,7 @@ export class PathAlias {
         this._statMap[alias] = aliasStatInfo(alias, realPath);
       }
     });
+    this._aliasList = Object.keys(this._aliasMap).sort();
   }
   private initCodeAction() {
     this._codeAction = new PathAliasCodeActionProvider(this._statMap);
@@ -124,7 +128,7 @@ export class PathAlias {
     );
   }
   private initCompletion() {
-    this._completion = new PathAliasCompletion(this._statMap);
+    this._completion = new PathAliasCompletion(this._statMap, this._aliasList);
 
     this._ctx.subscriptions.push(
       languages.registerCompletionItemProvider(
@@ -141,8 +145,8 @@ export class PathAlias {
   }
 
   private initDefinition() {
-    this._defination = new PathAliasDefinition(this._statMap);
-    this._tagDefination = new PathAliasTagDefinition(this._statMap);
+    this._defination = new PathAliasDefinition(this._statMap, this._aliasList);
+    this._tagDefination = new PathAliasTagDefinition(this._statMap, this._aliasList);
     this._ctx.subscriptions.push(
       languages.registerDefinitionProvider(
         [

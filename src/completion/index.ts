@@ -24,14 +24,14 @@ export class PathAliasCompletion implements CompletionItemProvider {
   private _disposable: Disposable;
   private _ignoreExtensionList: string[];
   private _needExtension: boolean = true;
-  constructor(statMap: AliasStatTree) {
+  constructor(statMap: AliasStatTree, aliasList: string[]) {
     let subscriptions: Disposable[] = [];
     this._needExtension = !!workspace
       .getConfiguration('pathAlias')
       .get('needExtension');
     this._ignoreExtensionList =
       workspace.getConfiguration('pathAlias').get('ignoreExtensionList') || [];
-    this.setStatMap(statMap);
+    this.setStatMapAndAliasList(statMap, aliasList);
     // 当配置更新时，查看pathalias 配置有相关更新
     workspace.onDidChangeConfiguration(e => {
       if (e.affectsConfiguration('pathAlias.needExtension')) {
@@ -47,9 +47,9 @@ export class PathAliasCompletion implements CompletionItemProvider {
     });
     this._disposable = Disposable.from(...subscriptions);
   }
-  setStatMap(statMap: AliasStatTree) {
+  setStatMapAndAliasList(statMap: AliasStatTree, aliasList: string[]) {
     this._statMap = statMap;
-    this._aliasList = Object.keys(this._statMap).sort();
+    this._aliasList = aliasList;
   }
   dispose() {
     this._disposable.dispose();

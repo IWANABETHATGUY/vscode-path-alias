@@ -17,17 +17,17 @@ export class PathAliasTagDefinition implements DefinitionProvider {
   private _statMap!: AliasStatTree;
   private _disposable: Disposable;
   private _aliasList: string[] = [];
-  constructor(statMap: AliasStatTree) {
+  constructor(statMap: AliasStatTree, aliasList: string[]) {
     let subscriptions: Disposable[] = [];
     this._disposable = Disposable.from(...subscriptions);
-    this.setStatMap(statMap);
+    this.setStatMapAndAliasList(statMap, aliasList);
   }
   dispose() {
     this._disposable.dispose();
   }
-  setStatMap(statMap: AliasStatTree) {
+  setStatMapAndAliasList(statMap: AliasStatTree, aliasList: string[]) {
     this._statMap = statMap;
-    this._aliasList = Object.keys(this._statMap).sort();
+    this._aliasList = aliasList;
   }
   provideDefinition(
     document: TextDocument,
