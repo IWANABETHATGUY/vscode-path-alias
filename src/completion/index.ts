@@ -10,28 +10,29 @@ import {
   Disposable,
   workspace,
   Range,
+  EndOfLine
 } from 'vscode';
-
 import { StatInfo, AliasStatTree } from './type';
 import { isObject, mostLikeAlias, normalizePath } from '../util/common';
 import * as path from 'path';
 import { Nullable } from '../util/types';
 import * as fs from 'fs';
 import { traverse } from '../util/traverseSourceFile';
+import { SignatureHelpCollectItem } from '../signature';
 export class PathAliasCompletion implements CompletionItemProvider {
   private _aliasList: string[] = [];
   private _statMap!: AliasStatTree;
   private _disposable: Disposable;
   private _ignoreExtensionList: string[];
   private _needExtension: boolean = true;
-  constructor(statMap: AliasStatTree) {
+  constructor(statMap: AliasStatTree, aliasList: string[]) {
     let subscriptions: Disposable[] = [];
     this._needExtension = !!workspace
       .getConfiguration('pathAlias')
       .get('needExtension');
     this._ignoreExtensionList =
       workspace.getConfiguration('pathAlias').get('ignoreExtensionList') || [];
-    this.setStatMap(statMap);
+    this.setStatMapAndAliasList(statMap, aliasList);
     // 当配置更新时，查看pathalias 配置有相关更新
     workspace.onDidChangeConfiguration(e => {
       if (e.affectsConfiguration('pathAlias.needExtension')) {
@@ -47,9 +48,9 @@ export class PathAliasCompletion implements CompletionItemProvider {
     });
     this._disposable = Disposable.from(...subscriptions);
   }
-  setStatMap(statMap: AliasStatTree) {
+  setStatMapAndAliasList(statMap: AliasStatTree, aliasList: string[]) {
     this._statMap = statMap;
-    this._aliasList = Object.keys(this._statMap).sort();
+    this._aliasList = aliasList;
   }
   dispose() {
     this._disposable.dispose();
@@ -132,7 +133,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
   }
   private importCompletion(
     document: TextDocument,
-    position: Position,
+    position: Position
   ): CompletionItem[] {
     const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
     const content = document.getText();
@@ -208,6 +209,119 @@ export class PathAliasCompletion implements CompletionItemProvider {
   }
 }
 
+export class ImportFunctionCompletion implements CompletionItemProvider {
+  private _disposable: Disposable;
+  private _functionTokenList: SignatureHelpCollectItem[] = [];
+  private _absoluteToAliasMap: Map<string, string> = new Map();
+  constructor() {
+    let subscriptions: Disposable[] = [];
+    this._disposable = Disposable.from(...subscriptions);
+  }
+
+  setFunctionTokenListAndPathList(
+    functionTokenList: SignatureHelpCollectItem[],
+    absolutePathList: string[],
+    aliasPathList: string[]
+  ) {
+    this._absoluteToAliasMap.clear();
+    this._functionTokenList = functionTokenList;
+    for (let i = 0; i < absolutePathList.length; i++) {
+      this._absoluteToAliasMap.set(absolutePathList[i], aliasPathList[i]);
+    }
+  }
+
+  dispose() {
+    this._disposable.dispose();
+  }
+  async provideCompletionItems(
+    document: TextDocument,
+    position: Position,
+    token: CancellationToken,
+    context: CompletionContext
+  ): Promise<CompletionItem[] | CompletionList> {
+    console.time('completion');
+    // const aliasReg = /\"(.*?)\"|\'(.*?)\'/;
+    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
+    const content = document.getText();
+    const completionList: CompletionItem[] = [];
+    console.time('reg');
+    const aliasInfoMap: Map<
+      string,
+      { braceEnd: number; empty: boolean }
+    > = new Map();
+    let execResult: Nullable<RegExpExecArray> = null;
+    const importIdentifierSet: Set<string> = new Set();
+    while ((execResult = importReg.exec(content))) {
+      let empty = true;
+      const [, beforeLeftBrace, importIdentifiers, pathAlias] = execResult;
+      const index = execResult.index;
+      const braceEnd =
+        index + beforeLeftBrace.length + importIdentifiers.length + 1;
+
+      importIdentifiers.split(',').forEach(identifier => {
+        const normalizedIdentifier = identifier.trim();
+        if (normalizedIdentifier) {
+          importIdentifierSet.add(identifier.trim());
+          if (empty) {
+            empty = false;
+          }
+        }
+      });
+      aliasInfoMap.set(pathAlias, {
+        braceEnd,
+        empty
+      });
+    }
+    const range = document.getWordRangeAtPosition(position);
+    // debugger;
+    if (range) {
+      // const callerToken = document.getText(range);
+      const signatureHelpCollectList = this._functionTokenList;
+      for (let i = 0; i < signatureHelpCollectList.length; i++) {
+        const item = signatureHelpCollectList[i].functionTokenList;
+        const path = signatureHelpCollectList[i].id;
+        const aliasPath = this._absoluteToAliasMap.get(path);
+        let zeroBasedPosition;
+        let info;
+        let insertRange: Nullable<Range> = null;
+        if (aliasPath) {
+          info = aliasInfoMap.get(aliasPath);
+          if (info) {
+            zeroBasedPosition = info.braceEnd;
+          }
+          if (zeroBasedPosition !== undefined) {
+            insertRange = new Range(
+              document.positionAt(zeroBasedPosition),
+              document.positionAt(zeroBasedPosition)
+            );
+          }
+        }
+        for (let j = 0; j < item.length; j++) {
+          if (importIdentifierSet.has(item[j].name!)) {
+            continue;
+          }
+          const completionItem = new CompletionItem(item[j].name!);
+          completionItem.kind = CompletionItemKind.Function;
+          completionItem.documentation = item[j].documentation!;
+          completionItem.detail = `从 ${path} 自动导入\n${item[j].type}`;
+          completionList.push(completionItem);
+          if (info && insertRange) {
+            completionItem.additionalTextEdits = [
+              {
+                newText: `${info.empty ? '' : ','} ${item[j].name!}`,
+                range: insertRange,
+                newEol: EndOfLine.LF
+              }
+            ];
+          }
+        }
+      }
+    }
+    console.timeEnd('completion');
+
+    return completionList;
+  }
+}
 function getInserPathRange(
   range: Range,
   document: TextDocument,

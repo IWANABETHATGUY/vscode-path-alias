@@ -92,37 +92,3 @@ function getExportKeyword(
     debugger;
   }
 }
-
-// function getSignature(fc: FunctionDeclaration | ArrowFunction): string[] {
-//   const paramsList: string[] = fc.parameters.map(item => item.name.getText());
-//   const typeList: string[] = Array.from({ length: paramsList.length }).map(
-//     _ => 'any'
-//   );
-//   try {
-//     if ((<any>fc).jsDoc && (<any>fc).jsDoc.length) {
-//       const tagList: JSDocParameterTag[] = (<any>fc).jsDoc[0].tags.filter(
-//         (tag: JSDocTag) => isJSDocParameterTag(tag)
-//       );
-//       for (let i = 0; i < typeList.length; i++) {
-//         if (tagList[i]) {
-//           typeList[i] = tagList[i].typeExpression!.type.getText();
-//         }
-//       }
-//     }
-//     return paramsList.reduce(
-//       (pre, cur, index) => {
-//         pre.push(`${cur}: ${typeList[index]}`);
-//         return pre;
-//       },
-//       <string[]>[]
-//     );
-//   } catch (error) {
-//     return paramsList.reduce(
-//       (pre, cur, index) => {
-//         pre.push(`${cur}: ${typeList[index]}`);
-//         return pre;
-//       },
-//       <string[]>[]
-//     );
-//   }
-// }

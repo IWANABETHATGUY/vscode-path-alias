@@ -1,16 +1,33 @@
-import { ExtensionContext, workspace, languages } from 'vscode';
-import { PathAliasCompletion } from './completion';
+import {
+  ExtensionContext,
+  workspace,
+  languages,
+  TextDocument,
+  window
+} from 'vscode';
+import * as fs from 'fs';
+
+import { PathAliasCompletion, ImportFunctionCompletion } from './completion';
 import { PathAliasDefinition } from './defination';
 import { PathAliasTagDefinition } from './defination/tag';
 import { AliasMap, StatInfo, AliasStatTree } from './completion/type';
 import { existsSync, statSync, readdirSync } from 'fs';
 import * as path from 'path';
 import { EventEmitter } from 'events';
-import { debounce } from './util/common';
+import { debounce, mostLikeAlias, normalizePath } from './util/common';
 import { generateWatcher } from './util/watcher';
 import { PathAliasCodeActionProvider } from './codeAction';
 import { getAliasConfig } from './util/config';
-import { PathAliasSignatureHelpProvider } from './signature';
+import {
+  PathAliasSignatureHelpProvider,
+  SignatureHelpCollectItem
+} from './signature';
+import { Nullable } from './util/types';
+import {
+  IFunctionSignature,
+  getFuncitonSignatureFromFiles
+} from './util/getSignatureFromFile';
+
 export const eventBus = new EventEmitter();
 export class PathAlias {
   private _ctx: ExtensionContext;
@@ -21,6 +38,11 @@ export class PathAlias {
   private _codeAction!: PathAliasCodeActionProvider;
   private _tagDefination!: PathAliasTagDefinition;
   private _signature!: PathAliasSignatureHelpProvider;
+  private _aliasList: string[] = [];
+  private _importAbsolutePathList: string[] = [];
+  private _importAliasPathList: string[] = [];
+  private _functionTokenList: SignatureHelpCollectItem[] = [];
+  private _importCompletion!: ImportFunctionCompletion;
   constructor(ctx: ExtensionContext) {
     console.time('init');
     this._ctx = ctx;
@@ -33,25 +55,92 @@ export class PathAlias {
         this.updateStatInfo();
       }
     });
+    window.onDidChangeActiveTextEditor(event => {
+      if (event) {
+        this.recollectDeppendencies(event.document);
+      }
+    });
     const handler = debounce(() => {
       this.updateStatInfo();
     }, 1000);
-    eventBus.on('file-change', path => {
-      const needToRestart = Object.keys(this._aliasMap)
-        .map(key => {
-          return this._aliasMap[key].replace(
-            '${cwd}',
-            workspace.rootPath || ''
-          );
-        })
-        .some(aliasPath => {
-          return path.startsWith(aliasPath);
-        });
-      if (needToRestart) {
-        handler();
-      }
-    });
+    eventBus
+      .on('file-change', path => {
+        const needToRestart = Object.keys(this._aliasMap)
+          .map(key => {
+            return this._aliasMap[key].replace(
+              '${cwd}',
+              workspace.rootPath || ''
+            );
+          })
+          .some(aliasPath => {
+            return path.startsWith(aliasPath);
+          });
+        if (needToRestart) {
+          handler();
+        }
+      })
+      .on('recollect', (document: TextDocument) => {
+        if (document) {
+          this.recollectDeppendencies(document);
+        }
+      });
     console.timeEnd('init');
+  }
+
+  private recollectDeppendencies(document: TextDocument) {
+    this._functionTokenList = [];
+    this._importAliasPathList = [];
+    this._importAbsolutePathList = [];
+    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
+    const content = document.getText();
+    let execResult: Nullable<RegExpExecArray> = null;
+    while ((execResult = importReg.exec(content))) {
+      const [, , , pathAlias] = execResult;
+      const mostLike = mostLikeAlias(this._aliasList, pathAlias.split('/')[0]);
+      if (mostLike) {
+        this._importAliasPathList.push(pathAlias);
+        const pathList = [
+          this._statMap[mostLike]['absolutePath'],
+          ...pathAlias.split('/').slice(1)
+        ];
+        let absolutePath = path.join(...pathList);
+        let extname = path.extname(absolutePath);
+        if (!extname) {
+          if (fs.existsSync(`${absolutePath}.js`)) {
+            extname = 'js';
+          } else if (fs.existsSync(`${absolutePath}.ts`)) {
+            extname = 'ts';
+          } else if (fs.existsSync(normalizePath(absolutePath))) {
+            absolutePath += '/index';
+            extname = 'js';
+          }
+        }
+        if (extname === 'js' || extname === 'ts') {
+          console.time('ast');
+          const absolutePathWithExtname = absolutePath + '.' + extname;
+          // const file = fs.readFileSync(absolutePathWithExtname, {
+          //   encoding: 'utf8'
+          // }).toString();
+          this._importAbsolutePathList.push(absolutePathWithExtname);
+        }
+      }
+    }
+    this._functionTokenList = getFuncitonSignatureFromFiles(
+      this._importAbsolutePathList
+    );
+    this._importCompletion.setFunctionTokenListAndPathList(
+      this._functionTokenList,
+      this._importAbsolutePathList,
+      this._importAliasPathList
+    );
+    this._signature.setFunctionTokenList(
+      this._functionTokenList.reduce(
+        (pre, cur) => {
+          return pre.concat(cur.functionTokenList);
+        },
+        <IFunctionSignature[]>[]
+      )
+    );
   }
 
   private init() {
@@ -63,7 +152,7 @@ export class PathAlias {
   }
 
   private initSignature() {
-    this._signature = new PathAliasSignatureHelpProvider(this._statMap);
+    this._signature = new PathAliasSignatureHelpProvider();
     this._ctx.subscriptions.push(
       languages.registerSignatureHelpProvider(
         [
@@ -79,8 +168,9 @@ export class PathAlias {
 
   private updateStatInfo() {
     this.initStatInfo();
-    this._completion.setStatMap(this._statMap);
-    this._defination.setStatMap(this._statMap);
+    this._completion.setStatMapAndAliasList(this._statMap, this._aliasList);
+    this._defination.setStatMapAndAliasList(this._statMap, this._aliasList);
+    this._tagDefination.setStatMapAndAliasList(this._statMap, this._aliasList);
   }
 
   private initStatInfo() {
@@ -110,6 +200,7 @@ export class PathAlias {
         this._statMap[alias] = aliasStatInfo(alias, realPath);
       }
     });
+    this._aliasList = Object.keys(this._aliasMap).sort();
   }
   private initCodeAction() {
     this._codeAction = new PathAliasCodeActionProvider(this._statMap);
@@ -124,8 +215,8 @@ export class PathAlias {
     );
   }
   private initCompletion() {
-    this._completion = new PathAliasCompletion(this._statMap);
-
+    this._completion = new PathAliasCompletion(this._statMap, this._aliasList);
+    this._importCompletion = new ImportFunctionCompletion();
     this._ctx.subscriptions.push(
       languages.registerCompletionItemProvider(
         [
@@ -136,13 +227,23 @@ export class PathAlias {
         '/',
         ',',
         '{'
+      ),
+      languages.registerCompletionItemProvider(
+        [
+          { language: 'javascript', scheme: 'file' },
+          { language: 'vue', scheme: 'file' }
+        ],
+        this._importCompletion
       )
     );
   }
 
   private initDefinition() {
-    this._defination = new PathAliasDefinition(this._statMap);
-    this._tagDefination = new PathAliasTagDefinition(this._statMap);
+    this._defination = new PathAliasDefinition(this._statMap, this._aliasList);
+    this._tagDefination = new PathAliasTagDefinition(
+      this._statMap,
+      this._aliasList
+    );
     this._ctx.subscriptions.push(
       languages.registerDefinitionProvider(
         [
