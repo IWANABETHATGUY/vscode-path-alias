@@ -1,4 +1,6 @@
 # Change Log
+- 0.9.0(2019-10-27)
+  - 提供autoImport功能(前提是你已经从某个文件中引入了一个函数，之后会提供该文件所有导出的自动引入)
 - 0.8.0(2019-10-24)
   - 提供对从路径别名中引入的函数的signature help 
   - 添加配置文件可以通过package.json 字段pathalias 或者在根目录下的.pathaliasrc(json)配置路径别名
