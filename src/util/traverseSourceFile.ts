@@ -89,6 +89,5 @@ function getExportKeyword(
       }
     }
   } catch (error) {
-    debugger;
   }
 }

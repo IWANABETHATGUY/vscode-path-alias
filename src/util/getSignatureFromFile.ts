@@ -44,7 +44,10 @@ function generateDocumentation(
     if (!sourceFile.isDeclarationFile) {
       // Walk the tree to search for classes
       try {
-        lastSignatureHelpCollectItem = {id: sourceFile.fileName, functionTokenList: []};
+        lastSignatureHelpCollectItem = {
+          id: sourceFile.fileName,
+          functionTokenList: []
+        };
         ts.forEachChild(sourceFile, visit);
         output.push(lastSignatureHelpCollectItem);
       } catch (err) {}
@@ -60,16 +63,27 @@ function generateDocumentation(
       if (!isNodeExported(node)) {
         return;
       }
-      if (
-        (ts.isFunctionDeclaration(node) || ts.isArrowFunction(node)) &&
-        node.name
-      ) {
+      if (ts.isFunctionDeclaration(node) && node.name) {
         // This is a top level class, get its symbol
         let symbol = checker.getSymbolAtLocation(node.name);
         if (symbol) {
-          lastSignatureHelpCollectItem!.functionTokenList.push(serializeFunction(symbol));
+          lastSignatureHelpCollectItem!.functionTokenList.push(
+            serializeFunction(symbol)
+          );
         }
         // No need to walk any further, class expressions/inner declarations cannot be exported
+      } else if (ts.isVariableStatement(node)) {
+        node.declarationList.declarations.forEach(decl => {
+          if (decl.initializer && (ts.isArrowFunction(decl.initializer) || ts.isFunctionExpression(decl.initializer))){
+            let symbol = getSymbolAtLocation(decl);
+            if (symbol) {
+              lastSignatureHelpCollectItem!.functionTokenList.push(
+                serializeFunction(symbol)
+              );
+            }
+          }
+          
+        });
       }
     } catch (err) {
       console.log(err);
@@ -141,6 +155,9 @@ function generateDocumentation(
   }
 }
 
+function getSymbolAtLocation(node: ts.Node): ts.Symbol {
+  return (node as any).symbol;
+}
 // const ret = generateDocumentation(['/Users/apple/Documents/vscode-extension/path-alias/src/util/test.js'], {
 //   target: ts.ScriptTarget.ES5,
 //   module: ts.ModuleKind.CommonJS,
