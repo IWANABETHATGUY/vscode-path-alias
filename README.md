@@ -29,3 +29,5 @@
   - 添加配置文件可以通过package.json 字段pathalias 或者在根目录下的.pathaliasrc(以json格式书写)配置路径别名
   - 提供对从路径别名中引入的函数的signature help 
   ![path-alias-signature](https://vuethisstore.flatpeach.xyz/pathaliassignature.gif)
+  - 提供对从路径别名中函数自动导入功能
+  ![path-alias-autoimport](https://vuethisstore.flatpeach.xyz/path-alias-autoimport2.gif)
