@@ -3,7 +3,8 @@ import {
   workspace,
   languages,
   TextDocument,
-  window
+  window,
+  Uri
 } from 'vscode';
 import * as fs from 'fs';
 
@@ -31,14 +32,14 @@ import {
 export const eventBus = new EventEmitter();
 export class PathAlias {
   private _ctx: ExtensionContext;
-  private _statMap: AliasStatTree = {};
-  private _aliasMap: AliasMap = {};
+  private _statMap: AliasStatTree[] = [{}];
+  private _aliasMap: AliasMap[] = [{}];
   private _completion!: PathAliasCompletion;
   private _defination!: PathAliasDefinition;
   private _codeAction!: PathAliasCodeActionProvider;
   private _tagDefination!: PathAliasTagDefinition;
   private _signature!: PathAliasSignatureHelpProvider;
-  private _aliasList: string[] = [];
+  private _aliasList: Array<string[]> = [];
   private _importAbsolutePathList: string[] = [];
   private _importAliasPathList: string[] = [];
   private _functionTokenList: SignatureHelpCollectItem[] = [];
@@ -46,9 +47,13 @@ export class PathAlias {
   constructor(ctx: ExtensionContext) {
     console.time('init');
     this._ctx = ctx;
+    
     this.init();
-    if (workspace.rootPath) {
-      generateWatcher(workspace.rootPath);
+
+    if (workspace.workspaceFolders && workspace.getWorkspaceFolder.length) {
+      workspace.workspaceFolders.forEach(ws => {
+        generateWatcher(ws.name);
+      });
     }
     workspace.onDidChangeConfiguration(e => {
       if (e.affectsConfiguration('pathAlias.aliasMap')) {
@@ -65,19 +70,24 @@ export class PathAlias {
     }, 1000);
     eventBus
       .on('file-change', path => {
-        const needToRestart = Object.keys(this._aliasMap)
-          .map(key => {
-            return this._aliasMap[key].replace(
-              '${cwd}',
-              workspace.rootPath || ''
-            );
-          })
-          .some(aliasPath => {
-            return path.startsWith(aliasPath);
-          });
-        if (needToRestart) {
-          handler();
+        const ws = workspace.getWorkspaceFolder(Uri.parse(`file://${path}`));
+        if (!ws) {
+          return;
         }
+        handler();
+        // const needToRestart = Object.keys(this._aliasMap)
+        //   .map(key => {
+        //     return this._aliasMap[key].replace(
+        //       '${cwd}',
+        //       workspace.rootPath || ''
+        //     );
+        //   })
+        //   .some(aliasPath => {
+        //     return path.startsWith(aliasPath);
+        //   });
+        // if (needToRestart) {
+        //   handler();
+        // }
       })
       .on('recollect', (document: TextDocument) => {
         if (document) {
@@ -94,13 +104,18 @@ export class PathAlias {
     const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
     const content = document.getText();
     let execResult: Nullable<RegExpExecArray> = null;
+    const ws = workspace.getWorkspaceFolder(document.uri);
+    if (!ws) {
+      return;
+    }
+    const index = ws.index;
     while ((execResult = importReg.exec(content))) {
       const [, , , pathAlias] = execResult;
-      const mostLike = mostLikeAlias(this._aliasList, pathAlias.split('/')[0]);
+      const mostLike = mostLikeAlias(this._aliasList[index], pathAlias.split('/')[0]);
       if (mostLike) {
         this._importAliasPathList.push(pathAlias);
         const pathList = [
-          this._statMap[mostLike]['absolutePath'],
+          this._statMap[index][mostLike]['absolutePath'],
           ...pathAlias.split('/').slice(1)
         ];
         let absolutePath = path.join(...pathList);
@@ -174,33 +189,38 @@ export class PathAlias {
   }
 
   private initStatInfo() {
-    this._aliasMap =
-      workspace.getConfiguration('pathAlias').get('aliasMap') || {};
-    this._aliasMap = {
-      ...this._aliasMap,
-      ...getAliasConfig(workspace.rootPath || '')
-    };
-    Object.keys(this._aliasMap).forEach(alias => {
-      const realPath = this._aliasMap[alias].replace(
-        '${cwd}',
-        workspace.rootPath || ''
-      );
-      let isLegal = true;
-      if (isLegal && !existsSync(realPath)) {
-        console.warn(`${realPath} does not exist`);
-        isLegal = false;
-      } else if (isLegal && !path.isAbsolute(realPath)) {
-        console.warn(`${realPath} is not a absolutePath`);
-        isLegal = false;
-      } else if (isLegal && !statSync(realPath).isDirectory()) {
-        console.warn(`${realPath} is not a directory`);
-        isLegal = false;
-      }
-      if (isLegal) {
-        this._statMap[alias] = aliasStatInfo(alias, realPath);
-      }
-    });
-    this._aliasList = Object.keys(this._aliasMap).sort();
+    if (workspace.workspaceFolders && workspace.workspaceFolders.length) {
+      this._aliasMap = workspace.workspaceFolders.map(_ => {});
+      workspace.workspaceFolders.forEach((ws, index) => {
+        this._aliasMap[index] =
+          workspace.getConfiguration('pathAlias').get('aliasMap') || {};
+        this._aliasMap[index] = {
+          ...this._aliasMap[index],
+          ...getAliasConfig(ws.name || '')
+        };
+        Object.keys(this._aliasMap[index]).forEach(alias => {
+          const realPath = this._aliasMap[index][alias].replace(
+            '${cwd}',
+            ws.name || ''
+          );
+          let isLegal = true;
+          if (isLegal && !existsSync(realPath)) {
+            console.warn(`${realPath} does not exist`);
+            isLegal = false;
+          } else if (isLegal && !path.isAbsolute(realPath)) {
+            console.warn(`${realPath} is not a absolutePath`);
+            isLegal = false;
+          } else if (isLegal && !statSync(realPath).isDirectory()) {
+            console.warn(`${realPath} is not a directory`);
+            isLegal = false;
+          }
+          if (isLegal) {
+            this._statMap[index][alias] = aliasStatInfo(alias, realPath);
+          }
+        });
+        this._aliasList[index] = Object.keys(this._aliasMap).sort();
+      });
+    }
   }
   private initCodeAction() {
     this._codeAction = new PathAliasCodeActionProvider(this._statMap);

@@ -10,16 +10,21 @@ import {
   Uri
 } from 'vscode';
 import { AliasStatTree, StatInfo } from '../completion/type';
-import { isObject, mostLikeAlias, normalizePath } from '../util/common';
+import {
+  isObject,
+  mostLikeAlias,
+  normalizePath,
+  getIndexOfWorkspaceFolder
+} from '../util/common';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Nullable } from '../util/types';
 import { traverse } from '../util/traverseSourceFile';
 export class PathAliasDefinition implements DefinitionProvider {
-  private _statMap!: AliasStatTree;
+  private _statMap!: AliasStatTree[];
   private _disposable: Disposable;
-  private _aliasList: string[] = [];
-  constructor(statMap: AliasStatTree, aliasList: string[]) {
+  private _aliasList: string[][] = [];
+  constructor(statMap: AliasStatTree[], aliasList: string[][]) {
     let subscriptions: Disposable[] = [];
     this._disposable = Disposable.from(...subscriptions);
     this.setStatMapAndAliasList(statMap, aliasList);
@@ -27,7 +32,7 @@ export class PathAliasDefinition implements DefinitionProvider {
   dispose() {
     this._disposable.dispose();
   }
-  setStatMapAndAliasList(statMap: AliasStatTree, aliasList: string[]) {
+  setStatMapAndAliasList(statMap: AliasStatTree[], aliasList: string[][]) {
     this._statMap = statMap;
     this._aliasList = aliasList;
   }
@@ -38,13 +43,18 @@ export class PathAliasDefinition implements DefinitionProvider {
   ): ProviderResult<Location | Location[] | LocationLink[]> {
     const reg = /\"(.*)\"|\'(.*)\'/;
     const range = document.getWordRangeAtPosition(position, reg);
+    const index = getIndexOfWorkspaceFolder(document.uri);
+    if (!index) return null;
     if (range) {
       const inputPath = document.getText(range);
       const resPath = inputPath.slice(1, -1);
-      const mostLike = mostLikeAlias(this._aliasList, resPath.split('/')[0]);
+      const mostLike = mostLikeAlias(
+        this._aliasList[index],
+        resPath.split('/')[0]
+      );
 
       if (mostLike) {
-        let statInfo: StatInfo = this._statMap[mostLike];
+        let statInfo: StatInfo = this._statMap[index][mostLike];
         let splitPath = resPath
           .split('/')
           .slice(1)
@@ -112,10 +122,13 @@ export class PathAliasDefinition implements DefinitionProvider {
     }
     return null;
   }
+
   private importDefination(document: TextDocument, position: Position) {
     const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
     const content = document.getText();
     const zeroBasedPosition = document.offsetAt(position);
+    const wsIndex = getIndexOfWorkspaceFolder(document.uri);
+    if (!wsIndex) return null;
     console.time('reg');
     let execResult: Nullable<RegExpExecArray> = null;
     while ((execResult = importReg.exec(content))) {
@@ -138,10 +151,13 @@ export class PathAliasDefinition implements DefinitionProvider {
       }
       const word = document.getText(wordRange);
       const [, , , pathAlias] = execResult;
-      const mostLike = mostLikeAlias(this._aliasList, pathAlias.split('/')[0]);
+      const mostLike = mostLikeAlias(
+        this._aliasList[wsIndex],
+        pathAlias.split('/')[0]
+      );
       if (mostLike) {
         const pathList = [
-          this._statMap[mostLike]['absolutePath'],
+          this._statMap[wsIndex][mostLike]['absolutePath'],
           ...pathAlias.split('/').slice(1)
         ];
         let absolutePath = path.join(...pathList);
