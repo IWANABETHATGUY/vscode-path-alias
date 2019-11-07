@@ -44,7 +44,7 @@ export class PathAliasDefinition implements DefinitionProvider {
     const reg = /\"(.*)\"|\'(.*)\'/;
     const range = document.getWordRangeAtPosition(position, reg);
     const index = getIndexOfWorkspaceFolder(document.uri);
-    if (!index) return null;
+    if (index === undefined) return null;
     if (range) {
       const inputPath = document.getText(range);
       const resPath = inputPath.slice(1, -1);
@@ -128,7 +128,7 @@ export class PathAliasDefinition implements DefinitionProvider {
     const content = document.getText();
     const zeroBasedPosition = document.offsetAt(position);
     const wsIndex = getIndexOfWorkspaceFolder(document.uri);
-    if (!wsIndex) return null;
+    if (wsIndex === undefined) return null;
     console.time('reg');
     let execResult: Nullable<RegExpExecArray> = null;
     while ((execResult = importReg.exec(content))) {

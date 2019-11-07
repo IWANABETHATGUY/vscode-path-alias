@@ -44,7 +44,7 @@ export class PathAliasTagDefinition implements DefinitionProvider {
     const range = document.getWordRangeAtPosition(position, reg);
     const sourceCode = document.getText();
     const index = getIndexOfWorkspaceFolder(document.uri);
-    if (!index) return null;
+    if (index === undefined) return null;
     if (range) {
       const importDefaultDeclarationReg = /import\s+(\w+)\s+from\s(\'(?:.*?)\'|\"(?:.*?)\")/g;
       const tag = document

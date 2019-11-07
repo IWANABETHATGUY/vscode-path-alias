@@ -42,7 +42,7 @@ export class PathAliasCodeActionProvider implements CodeActionProvider {
       const position = range.start;
       const pathRange = document.getWordRangeAtPosition(position, reg);
       const index = getIndexOfWorkspaceFolder(document.uri);
-      if (!index) return [];
+      if (index === undefined) return [];
       if (pathRange) {
         const inputPath = document.getText(pathRange);
         const resPath = inputPath.slice(1, -1);

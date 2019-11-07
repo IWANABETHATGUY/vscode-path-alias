@@ -69,11 +69,9 @@ export class PathAliasCompletion implements CompletionItemProvider {
     const completionList: CompletionItem[] = [];
     console.time('completion');
     const aliasReg = /\"(.*?)\"|\'(.*?)\'/;
-
     const range = document.getWordRangeAtPosition(position, aliasReg);
     const index = getIndexOfWorkspaceFolder(document.uri);
-    if (!index) return completionList;
-    // debugger;
+    if (index === undefined) return completionList;
     if (range) {
       const inputPath = document.getText(range);
       const resPath = inputPath.slice(1, -1);
@@ -150,7 +148,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
     const zeroBasedPosition = document.offsetAt(position);
     const completionList: CompletionItem[] = [];
     const index = getIndexOfWorkspaceFolder(document.uri);
-    if (!index) return completionList;
+    if (index === undefined) return completionList;
     console.time('reg');
     let execResult: Nullable<RegExpExecArray> = null;
     while ((execResult = importReg.exec(content))) {

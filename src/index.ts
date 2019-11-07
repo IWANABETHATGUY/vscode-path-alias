@@ -52,7 +52,7 @@ export class PathAlias {
 
     if (workspace.workspaceFolders && workspace.getWorkspaceFolder.length) {
       workspace.workspaceFolders.forEach(ws => {
-        generateWatcher(ws.name);
+        generateWatcher(ws.uri.fsPath);
       });
     }
     workspace.onDidChangeConfiguration(e => {
@@ -190,18 +190,18 @@ export class PathAlias {
 
   private initStatInfo() {
     if (workspace.workspaceFolders && workspace.workspaceFolders.length) {
-      this._aliasMap = workspace.workspaceFolders.map(_ => {});
+      this._statMap = workspace.workspaceFolders.map(_ => ({}));
       workspace.workspaceFolders.forEach((ws, index) => {
         this._aliasMap[index] =
           workspace.getConfiguration('pathAlias').get('aliasMap') || {};
         this._aliasMap[index] = {
           ...this._aliasMap[index],
-          ...getAliasConfig(ws.name || '')
+          ...getAliasConfig(ws.uri.fsPath || '')
         };
         Object.keys(this._aliasMap[index]).forEach(alias => {
           const realPath = this._aliasMap[index][alias].replace(
             '${cwd}',
-            ws.name || ''
+            ws.uri.fsPath || ''
           );
           let isLegal = true;
           if (isLegal && !existsSync(realPath)) {
@@ -218,7 +218,7 @@ export class PathAlias {
             this._statMap[index][alias] = aliasStatInfo(alias, realPath);
           }
         });
-        this._aliasList[index] = Object.keys(this._aliasMap).sort();
+        this._aliasList[index] = Object.keys(this._aliasMap[index]).sort();
       });
     }
   }
