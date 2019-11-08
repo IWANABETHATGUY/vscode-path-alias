@@ -1,4 +1,7 @@
 # Change Log
+- 0.10.0(2019-11-08)
+  - 提供对多工作目录的支持[issue#17](https://github.com/IWANABETHATGUY/vscode-path-alias/issues/17)
+  - 修复正则相关的bug
 - 0.9.0(2019-10-27)
   - 提供autoImport功能(前提是你已经从某个文件中引入了一个函数，之后会提供该文件所有导出的自动引入)
 - 0.8.0(2019-10-24)
