@@ -13,19 +13,24 @@ import {
   EndOfLine
 } from 'vscode';
 import { StatInfo, AliasStatTree } from './type';
-import { isObject, mostLikeAlias, normalizePath } from '../util/common';
+import {
+  isObject,
+  mostLikeAlias,
+  normalizePath,
+  getIndexOfWorkspaceFolder
+} from '../util/common';
 import * as path from 'path';
 import { Nullable } from '../util/types';
 import * as fs from 'fs';
 import { traverse } from '../util/traverseSourceFile';
 import { SignatureHelpCollectItem } from '../signature';
 export class PathAliasCompletion implements CompletionItemProvider {
-  private _aliasList: string[] = [];
-  private _statMap!: AliasStatTree;
+  private _aliasList: string[][] = [];
+  private _statMap!: AliasStatTree[];
   private _disposable: Disposable;
   private _ignoreExtensionList: string[];
   private _needExtension: boolean = true;
-  constructor(statMap: AliasStatTree, aliasList: string[]) {
+  constructor(statMap: AliasStatTree[], aliasList: string[][]) {
     let subscriptions: Disposable[] = [];
     this._needExtension = !!workspace
       .getConfiguration('pathAlias')
@@ -48,7 +53,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
     });
     this._disposable = Disposable.from(...subscriptions);
   }
-  setStatMapAndAliasList(statMap: AliasStatTree, aliasList: string[]) {
+  setStatMapAndAliasList(statMap: AliasStatTree[], aliasList: string[][]) {
     this._statMap = statMap;
     this._aliasList = aliasList;
   }
@@ -64,15 +69,18 @@ export class PathAliasCompletion implements CompletionItemProvider {
     const completionList: CompletionItem[] = [];
     console.time('completion');
     const aliasReg = /\"(.*?)\"|\'(.*?)\'/;
-
     const range = document.getWordRangeAtPosition(position, aliasReg);
-    // debugger;
+    const index = getIndexOfWorkspaceFolder(document.uri);
+    if (index === undefined) return completionList;
     if (range) {
       const inputPath = document.getText(range);
       const resPath = inputPath.slice(1, -1);
-      const mostLike = mostLikeAlias(this._aliasList, resPath.split('/')[0]);
+      const mostLike = mostLikeAlias(
+        this._aliasList[index],
+        resPath.split('/')[0]
+      );
       if (mostLike) {
-        let statInfo: StatInfo = this._statMap[mostLike];
+        let statInfo: StatInfo = this._statMap[index][mostLike];
         let prefixPathList: string[] = [];
         let insertPath = '';
         resPath.split('/').forEach((path, index, array) => {
@@ -135,10 +143,12 @@ export class PathAliasCompletion implements CompletionItemProvider {
     document: TextDocument,
     position: Position
   ): CompletionItem[] {
-    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
+    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:('(?:.*)'|"(?:.*)"))/g;
     const content = document.getText();
     const zeroBasedPosition = document.offsetAt(position);
     const completionList: CompletionItem[] = [];
+    const index = getIndexOfWorkspaceFolder(document.uri);
+    if (index === undefined) return completionList;
     console.time('reg');
     let execResult: Nullable<RegExpExecArray> = null;
     while ((execResult = importReg.exec(content))) {
@@ -154,11 +164,15 @@ export class PathAliasCompletion implements CompletionItemProvider {
     }
     console.timeEnd('reg');
     if (execResult) {
-      const [, , importIdentifiers, pathAlias] = execResult;
-      const mostLike = mostLikeAlias(this._aliasList, pathAlias.split('/')[0]);
+      let [, , importIdentifiers, pathAlias] = execResult;
+      pathAlias = pathAlias.slice(1, -1);
+      const mostLike = mostLikeAlias(
+        this._aliasList[index],
+        pathAlias.split('/')[0]
+      );
       if (mostLike) {
         const pathList = [
-          this._statMap[mostLike]['absolutePath'],
+          this._statMap[index][mostLike]['absolutePath'],
           ...pathAlias.split('/').slice(1)
         ];
         let absolutePath = path.join(...pathList);
@@ -241,7 +255,7 @@ export class ImportFunctionCompletion implements CompletionItemProvider {
   ): Promise<CompletionItem[] | CompletionList> {
     console.time('completion');
     // const aliasReg = /\"(.*?)\"|\'(.*?)\'/;
-    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
+    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:('(?:.*)'|"(?:.*)"))/g;
     const content = document.getText();
     const completionList: CompletionItem[] = [];
     console.time('reg');
@@ -253,7 +267,8 @@ export class ImportFunctionCompletion implements CompletionItemProvider {
     const importIdentifierSet: Set<string> = new Set();
     while ((execResult = importReg.exec(content))) {
       let empty = true;
-      const [, beforeLeftBrace, importIdentifiers, pathAlias] = execResult;
+      let [, beforeLeftBrace, importIdentifiers, pathAlias] = execResult;
+      pathAlias = pathAlias.slice(1, -1);
       const index = execResult.index;
       const braceEnd =
         index + beforeLeftBrace.length + importIdentifiers.length + 1;

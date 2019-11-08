@@ -1,6 +1,7 @@
 import { StatInfo } from '../completion/type';
 import * as path from 'path';
 import * as fs from 'fs';
+import { Uri, workspace } from 'vscode';
 export function isObject(obj: any): obj is StatInfo {
   return Object.prototype.toString.call(obj) === '[object Object]';
 }
@@ -51,13 +52,12 @@ export function normalizePath(absolutePath: string) {
   return absolutePath;
 }
 
-
 /**
  * 将驼峰风格的变量转化为Pascal风格
- * 
+ *
  * @export
- * @param {string} str 
- * @returns {string} 
+ * @param {string} str
+ * @returns {string}
  */
 export function transformCamelToPascal(str: string): string {
   let last = 0;
@@ -79,13 +79,12 @@ export function transformCamelToPascal(str: string): string {
     .join('');
 }
 
-
 /**
  * 将使用短横线连接的变量转化为Pascal风格的变量
- * 
+ *
  * @export
- * @param {string} str 
- * @returns {string} 
+ * @param {string} str
+ * @returns {string}
  */
 export function transformHyphenToPascal(str: string): string {
   let last = 0;
@@ -106,6 +105,22 @@ export function transformHyphenToPascal(str: string): string {
     })
     .join('');
 }
+
 function isUpperCase(char: string): boolean {
   return char >= 'A' && char <= 'Z';
+}
+
+/**
+ * 返回给定的uri属于的workspaceFolder 索引
+ *
+ * @export
+ * @param {Uri} uri
+ * @returns {(number | undefined)}
+ */
+export function getIndexOfWorkspaceFolder(uri: Uri): number | undefined {
+  const ws = workspace.getWorkspaceFolder(uri);
+  if (ws) {
+    return ws.index;
+  }
+  return undefined;
 }
