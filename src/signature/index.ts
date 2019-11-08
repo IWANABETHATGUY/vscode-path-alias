@@ -55,11 +55,12 @@ export class PathAliasSignatureHelpProvider implements SignatureHelpProvider {
         item => item.name === callerToken
       );
       if (!signatures.length) {
-        const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
+        const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:('(?:.*)'|"(?:.*)"))/g;
         const content = document.getText();
         let execResult: Nullable<RegExpExecArray> = null;
         while ((execResult = importReg.exec(content))) {
-          const [, , , pathAlias] = execResult;
+          let [, , , pathAlias] = execResult;
+          pathAlias = pathAlias.slice(1, -1);
           if (this._importAliasPathList.indexOf(pathAlias) === -1) {
             // this.recollectDeppendencies(document);
             eventBus.emit('recollect', document)

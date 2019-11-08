@@ -124,7 +124,7 @@ export class PathAliasDefinition implements DefinitionProvider {
   }
 
   private importDefination(document: TextDocument, position: Position) {
-    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
+    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:('(?:.*)'|"(?:.*)"))/g;
     const content = document.getText();
     const zeroBasedPosition = document.offsetAt(position);
     const wsIndex = getIndexOfWorkspaceFolder(document.uri);
@@ -150,7 +150,8 @@ export class PathAliasDefinition implements DefinitionProvider {
         return null;
       }
       const word = document.getText(wordRange);
-      const [, , , pathAlias] = execResult;
+      let [, , , pathAlias] = execResult;
+      pathAlias = pathAlias.slice(1, -1);
       const mostLike = mostLikeAlias(
         this._aliasList[wsIndex],
         pathAlias.split('/')[0]

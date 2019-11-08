@@ -143,7 +143,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
     document: TextDocument,
     position: Position
   ): CompletionItem[] {
-    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
+    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:('(?:.*)'|"(?:.*)"))/g;
     const content = document.getText();
     const zeroBasedPosition = document.offsetAt(position);
     const completionList: CompletionItem[] = [];
@@ -164,7 +164,8 @@ export class PathAliasCompletion implements CompletionItemProvider {
     }
     console.timeEnd('reg');
     if (execResult) {
-      const [, , importIdentifiers, pathAlias] = execResult;
+      let [, , importIdentifiers, pathAlias] = execResult;
+      pathAlias = pathAlias.slice(1, -1);
       const mostLike = mostLikeAlias(
         this._aliasList[index],
         pathAlias.split('/')[0]
@@ -254,7 +255,7 @@ export class ImportFunctionCompletion implements CompletionItemProvider {
   ): Promise<CompletionItem[] | CompletionList> {
     console.time('completion');
     // const aliasReg = /\"(.*?)\"|\'(.*?)\'/;
-    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
+    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:('(?:.*)'|"(?:.*)"))/g;
     const content = document.getText();
     const completionList: CompletionItem[] = [];
     console.time('reg');
@@ -266,7 +267,8 @@ export class ImportFunctionCompletion implements CompletionItemProvider {
     const importIdentifierSet: Set<string> = new Set();
     while ((execResult = importReg.exec(content))) {
       let empty = true;
-      const [, beforeLeftBrace, importIdentifiers, pathAlias] = execResult;
+      let [, beforeLeftBrace, importIdentifiers, pathAlias] = execResult;
+      pathAlias = pathAlias.slice(1, -1);
       const index = execResult.index;
       const braceEnd =
         index + beforeLeftBrace.length + importIdentifiers.length + 1;

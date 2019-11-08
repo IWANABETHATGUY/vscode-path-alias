@@ -101,7 +101,7 @@ export class PathAlias {
     this._functionTokenList = [];
     this._importAliasPathList = [];
     this._importAbsolutePathList = [];
-    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:(?:'(.*)'|"(.*)"))/g;
+    const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:('(?:.*)'|"(?:.*)"))/g;
     const content = document.getText();
     let execResult: Nullable<RegExpExecArray> = null;
     const ws = workspace.getWorkspaceFolder(document.uri);
@@ -110,7 +110,8 @@ export class PathAlias {
     }
     const index = ws.index;
     while ((execResult = importReg.exec(content))) {
-      const [, , , pathAlias] = execResult;
+      let [, , , pathAlias] = execResult;
+      pathAlias = pathAlias.slice(1, -1);
       const mostLike = mostLikeAlias(this._aliasList[index], pathAlias.split('/')[0]);
       if (mostLike) {
         this._importAliasPathList.push(pathAlias);
