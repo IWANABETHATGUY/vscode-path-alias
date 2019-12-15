@@ -1,7 +1,6 @@
 # path-alias 
 ## 介绍
-一个提供路径别名的提示语跳转的vscode插件
-
+一个提供路径别名补全，跳转,重构,函数自动引入，函数signature help  的vscode 插件
 ## Features
   - 可以自定义路径别名，在设置`pathAlias.aliasMap`中配置，key是你要定义的别名，value是路径别名所对应的绝对路径。其中可以使用`${cwd}`来代替当前工作目录的绝对路径。比方说，我想用`@` 代表我工作目录下的src目录那么我只用在配置中写
     ```json
