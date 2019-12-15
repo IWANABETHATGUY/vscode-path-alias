@@ -31,3 +31,4 @@
   ![path-alias-signature](https://vuethisstore.flatpeach.xyz/pathaliassignature.gif)
   - 提供对从路径别名中函数自动导入功能
   ![path-alias-autoimport](https://vuethisstore.flatpeach.xyz/path-alias-autoimport2.gif)
+  可以自由选择是否开启选择提示后自动触发后面的提示`pathAlias.autoSuggestion`默认开启，如需关闭自行设置为false

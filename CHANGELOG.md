@@ -1,4 +1,6 @@
 # Change Log
+- 0.11.0(2019-12-15)
+  - 添加输入一级后自动显示下一级的目录和文件[issue#32](https://github.com/IWANABETHATGUY/vscode-path-alias/issues/32)
 - 0.10.0(2019-11-08)
   - 提供对多工作目录的支持[issue#17](https://github.com/IWANABETHATGUY/vscode-path-alias/issues/17)
   - 修复正则相关的bug

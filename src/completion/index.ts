@@ -30,11 +30,15 @@ export class PathAliasCompletion implements CompletionItemProvider {
   private _disposable: Disposable;
   private _ignoreExtensionList: string[];
   private _needExtension: boolean = true;
+  private _autoSuggestion: boolean;
   constructor(statMap: AliasStatTree[], aliasList: string[][]) {
     let subscriptions: Disposable[] = [];
     this._needExtension = !!workspace
       .getConfiguration('pathAlias')
       .get('needExtension');
+    this._autoSuggestion = !!workspace
+      .getConfiguration('pathAlias')
+      .get('autoSuggestion');
     this._ignoreExtensionList =
       workspace.getConfiguration('pathAlias').get('ignoreExtensionList') || [];
     this.setStatMapAndAliasList(statMap, aliasList);
@@ -49,6 +53,11 @@ export class PathAliasCompletion implements CompletionItemProvider {
         this._ignoreExtensionList =
           workspace.getConfiguration('pathAlias').get('ignoreExtensionList') ||
           [];
+      }
+      if (e.affectsConfiguration('pathAlias.autoSuggestion')) {
+        this._autoSuggestion = !!workspace
+          .getConfiguration('pathAlias')
+          .get('autoSuggestion');
       }
     });
     this._disposable = Disposable.from(...subscriptions);
@@ -100,7 +109,6 @@ export class PathAliasCompletion implements CompletionItemProvider {
           },
           statInfo
         );
-        // debugger
         if (lastPath) {
           const children = lastPath.children;
           const retCompletionList = Object.keys(children).map(key => {
@@ -127,6 +135,13 @@ export class PathAliasCompletion implements CompletionItemProvider {
               curStatInfo.type === 'directory'
                 ? CompletionItemKind.Folder
                 : CompletionItemKind.File;
+            if (curStatInfo.type !== 'file' && this._autoSuggestion) {
+              completionItem.label += '/';
+              completionItem.command = {
+                command: 'editor.action.triggerSuggest',
+                title: 'Trigger Suggest'
+              };
+            }
             return completionItem;
           });
           completionList.push(...retCompletionList);
