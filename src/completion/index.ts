@@ -166,7 +166,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
     if (index === undefined) return completionList;
     console.time('reg');
     let execResult: Nullable<RegExpExecArray> = null;
-    while ((execResult = importReg.exec(content))) {
+    while (execResult = importReg.exec(content)) {
       const [, beforeLeftBrace, importIdentifiers] = execResult;
       const index = execResult.index;
       const leftBrachStart = index + beforeLeftBrace.length;
@@ -307,7 +307,7 @@ export class ImportFunctionCompletion implements CompletionItemProvider {
     if (range) {
       // const callerToken = document.getText(range);
       const signatureHelpCollectList = this._functionTokenList;
-      for (let i = 0; i < signatureHelpCollectList.length; i++) {
+      for (let i = 0, length = signatureHelpCollectList.length; i < length; i++) {
         const item = signatureHelpCollectList[i].functionTokenList;
         const path = signatureHelpCollectList[i].id;
         const aliasPath = this._absoluteToAliasMap.get(path);
@@ -326,7 +326,7 @@ export class ImportFunctionCompletion implements CompletionItemProvider {
             );
           }
         }
-        for (let j = 0; j < item.length; j++) {
+        for (let j = 0, len = item.length; j < len; j++) {
           if (importIdentifierSet.has(item[j].name!)) {
             continue;
           }

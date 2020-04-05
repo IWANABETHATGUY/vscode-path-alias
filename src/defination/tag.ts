@@ -55,7 +55,7 @@ export class PathAliasTagDefinition implements DefinitionProvider {
         transformCamelToPascal(tag)
       );
       let regMatch: Nullable<RegExpExecArray> = null;
-      let aliasPath: string = '';
+      let aliasPath = '';
       while ((regMatch = importDefaultDeclarationReg.exec(sourceCode))) {
         const [, localIdentifier, path] = regMatch;
         if (transformCamelToPascal(localIdentifier) === normalizedTag) {

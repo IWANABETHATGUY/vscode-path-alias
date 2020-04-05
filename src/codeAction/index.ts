@@ -35,7 +35,6 @@ export class PathAliasCodeActionProvider implements CodeActionProvider {
     context: CodeActionContext,
     token: CancellationToken
   ): Promise<CodeAction[]> {
-    await sleep(100);
     const ret: CodeAction[] = [];
     if (range.isEmpty) {
       const reg = /\"(.*)\"|\'(.*)\'/;
@@ -67,14 +66,6 @@ export class PathAliasCodeActionProvider implements CodeActionProvider {
     }
     return ret;
   }
-}
-
-function sleep(time: number): Promise<void> {
-  return new Promise((resolve, _reject) => {
-    setTimeout(() => {
-      resolve();
-    }, time);
-  });
 }
 
 function isRelativePath(path: string): boolean {
