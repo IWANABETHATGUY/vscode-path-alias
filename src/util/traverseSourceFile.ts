@@ -57,11 +57,11 @@ function getExportKeyword(
   try {
     if (node.modifiers && node.modifiers[0].kind === SyntaxKind.ExportKeyword) {
       if (isVariableStatement(node)) {
-        node.declarationList.declarations.forEach(decleration => {
+        node.declarationList.declarations.forEach(declaration => {
           const exportToken: IExportToken = {
-            identifier: decleration.name.getText(),
+            identifier: declaration.name.getText(),
             description: node.getText(),
-            position: getLineAndCharacterOfPosition(source, decleration.pos),
+            position: getLineAndCharacterOfPosition(source, declaration.pos),
             kind: 'variable'
           };
           // if (

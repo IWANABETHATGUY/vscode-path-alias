@@ -30,6 +30,7 @@ import {
 } from './util/getSignatureFromFile';
 
 export const eventBus = new EventEmitter();
+const isWin = process.platform === "win32";
 export class PathAlias {
   private _ctx: ExtensionContext;
   private _statMap: AliasStatTree[] = [{}];
@@ -66,28 +67,17 @@ export class PathAlias {
       }
     });
     const handler = debounce(() => {
+      console.log('fuck')
       this.updateStatInfo();
     }, 1000);
     eventBus
       .on('file-change', path => {
-        const ws = workspace.getWorkspaceFolder(Uri.parse(`file://${path}`));
+        const normalizedPath = isWin ? path.replace(/\\/g, '/') : path;
+        const ws = workspace.getWorkspaceFolder(Uri.parse(`file://${normalizedPath}`));
         if (!ws) {
           return;
         }
         handler();
-        // const needToRestart = Object.keys(this._aliasMap)
-        //   .map(key => {
-        //     return this._aliasMap[key].replace(
-        //       '${cwd}',
-        //       workspace.rootPath || ''
-        //     );
-        //   })
-        //   .some(aliasPath => {
-        //     return path.startsWith(aliasPath);
-        //   });
-        // if (needToRestart) {
-        //   handler();
-        // }
       })
       .on('recollect', (document: TextDocument) => {
         if (document) {
