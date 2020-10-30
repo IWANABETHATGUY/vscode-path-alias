@@ -24,6 +24,9 @@ import { Nullable } from '../util/types';
 import * as fs from 'fs';
 import { traverse } from '../util/traverseSourceFile';
 import { SignatureHelpCollectItem } from '../signature';
+
+const isWin = process.platform === "win32";
+
 export class PathAliasCompletion implements CompletionItemProvider {
   private _aliasList: string[][] = [];
   private _statMap!: AliasStatTree[];
@@ -115,7 +118,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
             const curStatInfo = children[key];
             const completionItem = new CompletionItem(key);
             // debugger
-            const replaceRange = getInserPathRange(
+            const replaceRange = getInsertPathRange(
               range,
               document,
               insertPath.length
@@ -309,7 +312,7 @@ export class ImportFunctionCompletion implements CompletionItemProvider {
       const signatureHelpCollectList = this._functionTokenList;
       for (let i = 0, length = signatureHelpCollectList.length; i < length; i++) {
         const item = signatureHelpCollectList[i].functionTokenList;
-        const path = signatureHelpCollectList[i].id;
+        const path = isWin ? signatureHelpCollectList[i].id.replace(/\//g, '\\') : signatureHelpCollectList[i].id;
         const aliasPath = this._absoluteToAliasMap.get(path);
         let zeroBasedPosition;
         let info;
@@ -352,7 +355,7 @@ export class ImportFunctionCompletion implements CompletionItemProvider {
     return completionList;
   }
 }
-function getInserPathRange(
+function getInsertPathRange(
   range: Range,
   document: TextDocument,
   length: number

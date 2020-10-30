@@ -9,8 +9,8 @@ import {
 import * as fs from 'fs';
 
 import { PathAliasCompletion, ImportFunctionCompletion } from './completion';
-import { PathAliasDefinition } from './defination';
-import { PathAliasTagDefinition } from './defination/tag';
+import { PathAliasDefinition } from './definition';
+import { PathAliasTagDefinition } from './definition/tag';
 import { AliasMap, StatInfo, AliasStatTree } from './completion/type';
 import { existsSync, statSync, readdirSync } from 'fs';
 import * as path from 'path';
@@ -26,7 +26,7 @@ import {
 import { Nullable } from './util/types';
 import {
   IFunctionSignature,
-  getFuncitonSignatureFromFiles
+  getFunctionSignatureFromFiles
 } from './util/getSignatureFromFile';
 
 export const eventBus = new EventEmitter();
@@ -35,7 +35,7 @@ export class PathAlias {
   private _statMap: AliasStatTree[] = [{}];
   private _aliasMap: AliasMap[] = [{}];
   private _completion!: PathAliasCompletion;
-  private _defination!: PathAliasDefinition;
+  private _definition!: PathAliasDefinition;
   private _codeAction!: PathAliasCodeActionProvider;
   private _tagDefinition!: PathAliasTagDefinition;
   private _signature!: PathAliasSignatureHelpProvider;
@@ -62,7 +62,7 @@ export class PathAlias {
     });
     window.onDidChangeActiveTextEditor(event => {
       if (event) {
-        this.recollectDeppendencies(event.document);
+        this.recollectDependencies(event.document);
       }
     });
     const handler = debounce(() => {
@@ -91,13 +91,13 @@ export class PathAlias {
       })
       .on('recollect', (document: TextDocument) => {
         if (document) {
-          this.recollectDeppendencies(document);
+          this.recollectDependencies(document);
         }
       });
     // console.timeEnd('init');
   }
 
-  private recollectDeppendencies(document: TextDocument) {
+  private recollectDependencies(document: TextDocument) {
     this._functionTokenList = [];
     this._importAliasPathList = [];
     this._importAbsolutePathList = [];
@@ -141,7 +141,7 @@ export class PathAlias {
         }
       }
     }
-    this._functionTokenList = getFuncitonSignatureFromFiles(
+    this._functionTokenList = getFunctionSignatureFromFiles(
       this._importAbsolutePathList
     );
     this._importCompletion.setFunctionTokenListAndPathList(
@@ -185,7 +185,7 @@ export class PathAlias {
   private updateStatInfo() {
     this.initStatInfo();
     this._completion.setStatMapAndAliasList(this._statMap, this._aliasList);
-    this._defination.setStatMapAndAliasList(this._statMap, this._aliasList);
+    this._definition.setStatMapAndAliasList(this._statMap, this._aliasList);
     this._tagDefinition.setStatMapAndAliasList(this._statMap, this._aliasList);
   }
 
@@ -260,7 +260,7 @@ export class PathAlias {
   }
 
   private initDefinition() {
-    this._defination = new PathAliasDefinition(this._statMap, this._aliasList);
+    this._definition = new PathAliasDefinition(this._statMap, this._aliasList);
     this._tagDefinition = new PathAliasTagDefinition(
       this._statMap,
       this._aliasList
@@ -271,7 +271,7 @@ export class PathAlias {
           { language: 'javascript', scheme: 'file' },
           { language: 'vue', scheme: 'file' }
         ],
-        this._defination
+        this._definition
       ),
       languages.registerDefinitionProvider(
         [{ language: 'vue', scheme: 'file' }],

@@ -39,7 +39,7 @@ export class PathAliasTagDefinition implements DefinitionProvider {
     position: Position,
     token: CancellationToken
   ): ProviderResult<Location | Location[] | LocationLink[]> {
-    console.time('tag-defination');
+    console.time('tag-definition');
     const reg = /\<([\w-]+).*?/;
     const range = document.getWordRangeAtPosition(position, reg);
     const sourceCode = document.getText();
@@ -70,7 +70,7 @@ export class PathAliasTagDefinition implements DefinitionProvider {
         );
         let statInfo: StatInfo = this._statMap[index][mostLike];
         const absolutePath = aliasPath.replace(mostLike, statInfo.absolutePath);
-        console.timeEnd('tag-defination');
+        console.timeEnd('tag-definition');
         const normalizedAbsolutePath =
           absolutePath + (absolutePath.endsWith('vue') ? '' : '.vue');
         return new Location(

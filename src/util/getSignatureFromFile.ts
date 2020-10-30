@@ -13,7 +13,7 @@ export interface IFunctionSignature {
   optional?: boolean;
 }
 
-export function getFuncitonSignatureFromFiles(files: string[]) {
+export function getFunctionSignatureFromFiles(files: string[]) {
   // Build a program using the set of root file names in fileNames
   console.time('typechecker');
   const doc = generateDocumentation(files, {
