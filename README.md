@@ -24,7 +24,7 @@
   - 支持import变量的跳转
     ![import-defination](https://github.com/IWANABETHATGUY/vscode-path-alias/blob/master/assets/path-alias-autoimport.gif?raw=true)
   - 支持组件标签跳转。
-  ![html-tag-defination](https://github.com/IWANABETHATGUY/vscode-path-alias/blob/master/assets/html-tag-defination.gif.gif?raw=true)
+  ![html-tag-defination](https://github.com/IWANABETHATGUY/vscode-path-alias/blob/master/assets/html-tag-defination.gif?raw=true)
   - 添加配置文件可以通过package.json 字段pathalias 或者在根目录下的.pathaliasrc(以json格式书写)配置路径别名
   - 提供对从路径别名中引入的函数的signature help 
   ![path-alias-signature](https://github.com/IWANABETHATGUY/vscode-path-alias/blob/master/assets/pathaliassignature.gif?raw=true)
