@@ -76,7 +76,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
     context: CompletionContext
   ): Promise<CompletionItem[] | CompletionList> {
     const completionList: CompletionItem[] = [];
-    console.time('completion');
+    // console.time('completion');
     const aliasReg = /\"(.*?)\"|\'(.*?)\'/;
     const range = document.getWordRangeAtPosition(position, aliasReg);
     const index = getIndexOfWorkspaceFolder(document.uri);
@@ -150,7 +150,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
     } else {
       completionList.push(...this.importCompletion(document, position));
     }
-    console.timeEnd('completion');
+    // console.timeEnd('completion');
 
     return completionList;
   }
@@ -164,7 +164,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
     const completionList: CompletionItem[] = [];
     const index = getIndexOfWorkspaceFolder(document.uri);
     if (index === undefined) return completionList;
-    console.time('reg');
+    // console.time('reg');
     let execResult: Nullable<RegExpExecArray> = null;
     while (execResult = importReg.exec(content)) {
       const [, beforeLeftBrace, importIdentifiers] = execResult;

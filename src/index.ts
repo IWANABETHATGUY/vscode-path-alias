@@ -37,7 +37,7 @@ export class PathAlias {
   private _completion!: PathAliasCompletion;
   private _defination!: PathAliasDefinition;
   private _codeAction!: PathAliasCodeActionProvider;
-  private _tagDefination!: PathAliasTagDefinition;
+  private _tagDefinition!: PathAliasTagDefinition;
   private _signature!: PathAliasSignatureHelpProvider;
   private _aliasList: Array<string[]> = [];
   private _importAbsolutePathList: string[] = [];
@@ -45,7 +45,7 @@ export class PathAlias {
   private _functionTokenList: SignatureHelpCollectItem[] = [];
   private _importCompletion!: ImportFunctionCompletion;
   constructor(ctx: ExtensionContext) {
-    console.time('init');
+    // console.time('init');
     this._ctx = ctx;
     
     this.init();
@@ -94,7 +94,7 @@ export class PathAlias {
           this.recollectDeppendencies(document);
         }
       });
-    console.timeEnd('init');
+    // console.timeEnd('init');
   }
 
   private recollectDeppendencies(document: TextDocument) {
@@ -132,7 +132,7 @@ export class PathAlias {
           }
         }
         if (extname === 'js' || extname === 'ts') {
-          console.time('ast');
+          // console.time('ast');
           const absolutePathWithExtname = absolutePath + '.' + extname;
           // const file = fs.readFileSync(absolutePathWithExtname, {
           //   encoding: 'utf8'
@@ -186,7 +186,7 @@ export class PathAlias {
     this.initStatInfo();
     this._completion.setStatMapAndAliasList(this._statMap, this._aliasList);
     this._defination.setStatMapAndAliasList(this._statMap, this._aliasList);
-    this._tagDefination.setStatMapAndAliasList(this._statMap, this._aliasList);
+    this._tagDefinition.setStatMapAndAliasList(this._statMap, this._aliasList);
   }
 
   private initStatInfo() {
@@ -261,7 +261,7 @@ export class PathAlias {
 
   private initDefinition() {
     this._defination = new PathAliasDefinition(this._statMap, this._aliasList);
-    this._tagDefination = new PathAliasTagDefinition(
+    this._tagDefinition = new PathAliasTagDefinition(
       this._statMap,
       this._aliasList
     );
@@ -275,7 +275,7 @@ export class PathAlias {
       ),
       languages.registerDefinitionProvider(
         [{ language: 'vue', scheme: 'file' }],
-        this._tagDefination
+        this._tagDefinition
       )
     );
   }
