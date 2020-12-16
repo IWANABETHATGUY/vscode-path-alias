@@ -1,4 +1,5 @@
 # path-alias 
+中文|[English](https://github.com/IWANABETHATGUY/vscode-path-alias/blob/master/README.EN.md)
 ## 介绍
 一个提供路径别名补全，跳转,重构,函数自动引入，函数signature help  的vscode 插件
 ## Features

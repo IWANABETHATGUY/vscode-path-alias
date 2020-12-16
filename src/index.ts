@@ -67,7 +67,6 @@ export class PathAlias {
       }
     });
     const handler = debounce(() => {
-      console.log('fuck')
       this.updateStatInfo();
     }, 1000);
     eventBus
