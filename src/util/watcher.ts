@@ -2,7 +2,6 @@ import * as chikdar from 'chokidar';
 import { eventBus } from '..';
 
 export function generateWatcher(path: string) {
-  debugger;
   const watcher = chikdar.watch(path, {
     ignored: ['**/node_modules/**'],
   });
