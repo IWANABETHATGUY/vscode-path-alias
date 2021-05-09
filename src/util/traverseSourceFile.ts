@@ -31,8 +31,12 @@ export function traverse(
     ScriptTarget.ES2015,
     true
   );
-  _traverse(result, exportKeywordList, result, needParams);
+  result.statements.forEach(s => {
+    getExportKeyword(s, exportKeywordList, result)
+  });
   return exportKeywordList;
+  // _traverse(result, exportKeywordList, result, needParams);
+  // return exportKeywordList;
 }
 function _traverse(
   node: Node,
@@ -87,6 +91,18 @@ function getExportKeyword(
         };
         tokenList.push(exportToken);
       }
+    } else if(node.kind === SyntaxKind.ExportAssignment) {
+      const position = getLineAndCharacterOfPosition(
+        source,
+        node.expression!.getStart()
+      );
+      const exportToken: IExportToken = {
+        identifier: 'default',
+        position,
+        description: node.getText(),
+        kind: 'variable'
+      };
+      tokenList.push(exportToken);
     }
   } catch (error) {
   }

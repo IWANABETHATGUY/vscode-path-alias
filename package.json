@@ -11,8 +11,7 @@
         "Other"
     ],
     "activationEvents": [
-        "onLanguage:javascript",
-        "onLanguage:vue"
+        "*"
     ],
     "main": "./out/extension",
     "readme": "https://github.com/IWANABETHATGUY/vscode-path-alias/blob/master/README.md",

@@ -124,3 +124,30 @@ export function getIndexOfWorkspaceFolder(uri: Uri): number | undefined {
   }
   return undefined;
 }
+
+/**
+ * 根据路径，自动补全文件的绝对路径
+ * @param filePath 文件路径
+ * @returns 
+ */
+export function getFileAbsolutePath(filePath: string) {
+  const extensions = ['.js', '.ts', '.jsx', '.tsx', '.vue'];
+  // 判断是否存在并且是否是文件
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+    return filePath;
+  }
+  // 判断以其为名字的文件有无
+  for(let ext of extensions) {
+    const sameNameFile = filePath + ext;
+    if (fs.existsSync(sameNameFile)) {
+      return sameNameFile;
+    }
+  }
+  // 判断以其为名的目录下的index文件有无
+  for(let ext of extensions) {
+    const indexFile = filePath + '/index' + ext;
+    if (fs.existsSync(indexFile)) {
+      return indexFile;
+    }
+  }
+}
