@@ -9,7 +9,7 @@ import {
   CompletionItemKind,
   Disposable,
   workspace,
-  Range
+  Range,
 } from 'vscode';
 import { StatInfo, AliasStatTree } from './type';
 import { isObject, mostLikeAlias, normalizePath } from '../util/common';
@@ -32,7 +32,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
       workspace.getConfiguration('pathAlias').get('ignoreExtensionList') || [];
     this.setStatMap(statMap);
 
-    workspace.onDidChangeConfiguration(e => {
+    workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('pathAlias.needExtension')) {
         this._needExtension = !!workspace
           .getConfiguration('pathAlias')
@@ -71,35 +71,41 @@ export class PathAliasCompletion implements CompletionItemProvider {
       const mostLike = mostLikeAlias(this._aliasList, resPath.split('/')[0]);
       if (mostLike) {
         let statInfo: StatInfo = this._statMap[mostLike];
-        let prefixPathList: string[] = []; 
+        let prefixPathList: string[] = [];
         let insertPath = '';
         resPath.split('/').forEach((path, index, array) => {
           if (index > 0 && index < array.length - 1) {
             prefixPathList.push(path);
-          }
-          else if (index === array.length - 1) {
+          } else if (index === array.length - 1) {
             insertPath = path;
           }
-        })
+        });
         // let splitPath = resPath
         //   .split('/')
         //   .slice(1)
         //   .filter(Boolean);
-        const lastPath = prefixPathList.reduce((pre: Nullable<StatInfo>, cur) => {
-          if (isObject(pre)) {
-            pre = pre.children[cur];
-            return pre;
-          }
-          return null;
-        }, statInfo);
+        const lastPath = prefixPathList.reduce(
+          (pre: Nullable<StatInfo>, cur) => {
+            if (isObject(pre)) {
+              pre = pre.children[cur];
+              return pre;
+            }
+            return null;
+          },
+          statInfo
+        );
         // debugger
         if (lastPath) {
           const children = lastPath.children;
-          const retCompletionList = Object.keys(children).map(key => {
+          const retCompletionList = Object.keys(children).map((key) => {
             const curStatInfo = children[key];
             const completionItem = new CompletionItem(key);
             // debugger
-            const replaceRange = getInserPathRange(range, document, insertPath.length);
+            const replaceRange = getInserPathRange(
+              range,
+              document,
+              insertPath.length
+            );
             completionItem.range = replaceRange;
             const splitList = key.split('.');
             const basename = splitList.slice(0, -1).join('.');
@@ -147,7 +153,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
         if (mostLike) {
           const pathList = [
             this._statMap[mostLike]['absolutePath'],
-            ...pathAlias.split('/').slice(1)
+            ...pathAlias.split('/').slice(1),
           ];
           let absolutePath = path.join(...pathList);
           let extname = path.extname(absolutePath);
@@ -165,13 +171,13 @@ export class PathAliasCompletion implements CompletionItemProvider {
             console.time('ast');
             const absolutePathWithExtname = absolutePath + '.' + extname;
             const file = fs.readFileSync(absolutePathWithExtname, {
-              encoding: 'utf8'
+              encoding: 'utf8',
             });
             // 这里是已经导入的函数或变量
             const importIdentifierList = importIdentifiers
               .split(',')
               .filter(Boolean)
-              .map(id => id.trim());
+              .map((id) => id.trim());
             const exportIdentifierList = traverse(
               absolutePathWithExtname,
               file
@@ -180,9 +186,9 @@ export class PathAliasCompletion implements CompletionItemProvider {
 
             const retCompletionList = exportIdentifierList
               .filter(
-                token => importIdentifierList.indexOf(token.identifier) === -1
+                (token) => importIdentifierList.indexOf(token.identifier) === -1
               )
-              .map(token => {
+              .map((token) => {
                 const completionItem = new CompletionItem(token.identifier);
                 completionItem.sortText = `0${token.identifier}`;
                 completionItem.kind =
@@ -203,10 +209,15 @@ export class PathAliasCompletion implements CompletionItemProvider {
   }
 }
 
-
-function getInserPathRange(range: Range, document: TextDocument, length: number): Range {
+function getInserPathRange(
+  range: Range,
+  document: TextDocument,
+  length: number
+): Range {
   const numberOfEndPoint = document.offsetAt(range.end);
   const end = document.positionAt(numberOfEndPoint - 1);
   const start = document.positionAt(numberOfEndPoint - length - 1);
   return new Range(start, end);
 }
+
+function test() {}
