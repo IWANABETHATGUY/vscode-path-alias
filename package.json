@@ -2,7 +2,7 @@
   "name": "path-alias",
   "displayName": "path-alias",
   "description": "一个可以解决路径别名提示，跳转的vscode插件",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "publisher": "IWANABETHATGUY",
   "engines": {
     "vscode": "^1.30.0"
