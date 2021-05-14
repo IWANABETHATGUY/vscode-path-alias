@@ -271,6 +271,9 @@ export class PathAlias {
 }
 
 function aliasStatInfo(alias: string, realPath: string): StatInfo {
+  if (isWin) {
+    realPath = realPath.replace(/\//g, '\\')
+  }
   const stat: StatInfo = {
     name: alias,
     type: 'directory',
