@@ -17,12 +17,6 @@
   "main": "./out/extension",
   "readme": "https://github.com/IWANABETHATGUY/vscode-path-alias/blob/master/README.md",
   "contributes": {
-    "commands": [
-      {
-        "command": "extension.sayHello",
-        "title": "Hello World"
-      }
-    ],
     "configuration": {
       "title": "pathAlias",
       "properties": {
