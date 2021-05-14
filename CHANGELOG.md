@@ -1,4 +1,19 @@
 # Change Log
+- 0.11.0(2019-12-15)
+  - 添加输入一级后自动显示下一级的目录和文件[issue#32](https://github.com/IWANABETHATGUY/vscode-path-alias/issues/32)
+- 0.10.0(2019-11-08)
+  - 提供对多工作目录的支持[issue#17](https://github.com/IWANABETHATGUY/vscode-path-alias/issues/17)
+  - 修复正则相关的bug
+- 0.9.0(2019-10-27)
+  - 提供autoImport功能(前提是你已经从某个文件中引入了一个函数，之后会提供该文件所有导出的自动引入)
+- 0.8.0(2019-10-24)
+  - 提供对从路径别名中引入的函数的signature help 
+  - 添加配置文件可以通过package.json 字段pathalias 或者在根目录下的.pathaliasrc(json)配置路径别名
+  - 完成[issue#18](https://github.com/IWANABETHATGUY/vscode-path-alias/issues/18)
+- 0.7.0(2019-10-14)
+  - 修复标签跳转问题
+  - 优化输入补全
+  - 在忽略后缀模式下，添加了可配置的忽略后缀文件列表，这样既可以忽略.js等文件的后缀，又可以补全像.png文件的后缀
 - 0.6.0(2019-10-10)
   - 支持vue组件标签跳转
 - 0.5.0(2019-09-24)

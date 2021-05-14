@@ -1,14 +1,10 @@
-export interface AliasMap {
-  [prop: string]: string;
-}
+export type AliasMap = Record<string, string>;
 
 export interface StatInfo {
   type: 'file' | 'directory';
-  children: { [name: string]: StatInfo };
+  children: AliasStatTree;
   name: string;
   absolutePath: string;
 }
 
-export interface AliasStatTree {
-  [alias: string]: StatInfo;
-}
+export type AliasStatTree  = Record<string, StatInfo>;
