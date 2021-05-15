@@ -15,7 +15,7 @@ import { AliasMap, StatInfo, AliasStatTree } from './completion/type';
 import { existsSync, statSync, readdirSync } from 'fs';
 import * as path from 'path';
 import { EventEmitter } from 'events';
-import { debounce, mostLikeAlias, normalizePath } from './util/common';
+import { debounce, mostLikeAlias, normalizePath, getFileWithExt } from './util/common';
 import { generateWatcher } from './util/watcher';
 import { PathAliasCodeActionProvider } from './codeAction';
 import { getAliasConfig } from './util/config';
@@ -193,19 +193,19 @@ export class PathAlias {
             '${cwd}',
             ws.uri.fsPath || ''
           );
-          let isLegal = true;
-          if (isLegal && !existsSync(realPath)) {
-            console.warn(`${realPath} does not exist`);
-            isLegal = false;
-          } else if (isLegal && !path.isAbsolute(realPath)) {
-            console.warn(`${realPath} is not a absolutePath`);
-            isLegal = false;
-          } else if (isLegal && !statSync(realPath).isDirectory()) {
-            console.warn(`${realPath} is not a directory`);
-            isLegal = false;
-          }
-          if (isLegal) {
-            this._statMap[index][alias] = aliasStatInfo(alias, realPath);
+          let absolutePath = getFileWithExt(realPath) || (existsSync(realPath) && statSync(realPath).isDirectory() && realPath);
+          // if (isLegal && !existsSync(realPath)) {
+          //   console.warn(`${realPath} does not exist`);
+          //   isLegal = false;
+          // } else if (isLegal && !path.isAbsolute(realPath)) {
+          //   console.warn(`${realPath} is not a absolutePath`);
+          //   isLegal = false;
+          // } else if (isLegal && !statSync(realPath).isDirectory()) {
+          //   console.warn(`${realPath} is not a directory`);
+          //   isLegal = false;
+          // }
+          if (absolutePath) {
+            this._statMap[index][alias] = aliasStatInfo(alias, absolutePath);
           }
         });
         this._aliasList[index] = Object.keys(this._aliasMap[index]).sort();
@@ -271,6 +271,23 @@ export class PathAlias {
 }
 
 function aliasStatInfo(alias: string, realPath: string): StatInfo {
+  if (fs.existsSync(realPath) && fs.statSync(realPath).isFile()) {
+    return aliasStatInfoFile(alias, realPath);
+  }
+  return aliasStatInfoDir(alias, realPath);
+}
+
+function aliasStatInfoFile(alias: string, realPath: string): StatInfo {
+  const stat: StatInfo = {
+    name: alias,
+    type: 'file',
+    absolutePath: realPath,
+    children: Object.create(null)
+  };
+  return stat;
+}
+
+function aliasStatInfoDir(alias: string, realPath: string): StatInfo {
   const stat: StatInfo = {
     name: alias,
     type: 'directory',

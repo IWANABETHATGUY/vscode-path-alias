@@ -8,7 +8,11 @@ import {
   getLineAndCharacterOfPosition,
   LineAndCharacter,
   SourceFileLike,
-  isArrowFunction
+  isArrowFunction,
+  isExportDeclaration,
+  isExportAssignment,
+  NamedExports,
+  ExportSpecifier,
 } from 'typescript';
 
 export interface IExportToken {
@@ -31,26 +35,10 @@ export function traverse(
     ScriptTarget.ES2015,
     true
   );
-  result.statements.forEach(s => {
-    getExportKeyword(s, exportKeywordList, result)
+  result.statements.forEach((s) => {
+    getExportKeyword(s, exportKeywordList, result);
   });
   return exportKeywordList;
-  // _traverse(result, exportKeywordList, result, needParams);
-  // return exportKeywordList;
-}
-function _traverse(
-  node: Node,
-  tokenList: IExportToken[],
-  source: SourceFileLike,
-  needParams: boolean,
-  depth = 0
-): void {
-  getExportKeyword(node, tokenList, source);
-  if (depth <= 1) {
-    node.forEachChild((n: Node) => {
-      _traverse(n, tokenList, source, needParams, depth + 1);
-    });
-  }
 }
 
 function getExportKeyword(
@@ -61,12 +49,12 @@ function getExportKeyword(
   try {
     if (node.modifiers && node.modifiers[0].kind === SyntaxKind.ExportKeyword) {
       if (isVariableStatement(node)) {
-        node.declarationList.declarations.forEach(declaration => {
+        node.declarationList.declarations.forEach((declaration) => {
           const exportToken: IExportToken = {
             identifier: declaration.name.getText(),
             description: node.getText(),
             position: getLineAndCharacterOfPosition(source, declaration.pos),
-            kind: 'variable'
+            kind: 'variable',
           };
           // if (
           //   decleration.initializer &&
@@ -87,11 +75,11 @@ function getExportKeyword(
           identifier: node.name!.getText(),
           position,
           description: node.getText(),
-          kind: 'function'
+          kind: 'function',
         };
         tokenList.push(exportToken);
       }
-    } else if(node.kind === SyntaxKind.ExportAssignment) {
+    } else if (isExportAssignment(node)) {
       const position = getLineAndCharacterOfPosition(
         source,
         node.expression!.getStart()
@@ -100,10 +88,23 @@ function getExportKeyword(
         identifier: 'default',
         position,
         description: node.getText(),
-        kind: 'variable'
+        kind: 'variable',
       };
       tokenList.push(exportToken);
+    } else if (isExportDeclaration(node)) {
+      (node.exportClause as NamedExports).elements.forEach((elm: ExportSpecifier) => {
+        const position = getLineAndCharacterOfPosition(
+          source,
+          elm.name.getStart()
+        );
+        const exportToken: IExportToken = {
+          identifier: elm.name.getText(),
+          position,
+          description: elm.getText(),
+          kind: 'variable',
+        };
+        tokenList.push(exportToken);
+      });
     }
-  } catch (error) {
-  }
+  } catch (error) {}
 }

@@ -125,29 +125,40 @@ export function getIndexOfWorkspaceFolder(uri: Uri): number | undefined {
   return undefined;
 }
 
+const extensions = ['.js', '.ts', '.jsx', '.tsx', '.vue'];
 /**
  * 根据路径，自动补全文件的绝对路径
  * @param filePath 文件路径
  * @returns 
  */
-export function getFileAbsolutePath(filePath: string) {
-  const extensions = ['.js', '.ts', '.jsx', '.tsx', '.vue'];
+export function getFileAbsolutePath(filePath: string, exts: string[] = extensions) {
+  const fn = getFileWithExt(filePath, exts);
+  if (fn) return fn;
+  // 判断以其为名的目录下的index文件有无
+  for(let ext of exts) {
+    const indexFile = filePath + '/index' + ext;
+    if (fs.existsSync(indexFile)) {
+      return indexFile;
+    }
+  }
+}
+
+/**
+ * 获取文件名包，或者含扩展文件有无
+ * @param filePath 文件名
+ * @param exts 匹配扩展列表
+ * @returns 
+ */
+export function getFileWithExt(filePath: string, exts: string[] = extensions) {
   // 判断是否存在并且是否是文件
   if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
     return filePath;
   }
-  // 判断以其为名字的文件有无
-  for(let ext of extensions) {
+  // 判断以其为名字，以ext为扩展的文件有无
+  for(let ext of exts) {
     const sameNameFile = filePath + ext;
-    if (fs.existsSync(sameNameFile)) {
+    if (fs.existsSync(sameNameFile) && fs.statSync(sameNameFile).isFile()) {
       return sameNameFile;
-    }
-  }
-  // 判断以其为名的目录下的index文件有无
-  for(let ext of extensions) {
-    const indexFile = filePath + '/index' + ext;
-    if (fs.existsSync(indexFile)) {
-      return indexFile;
     }
   }
 }

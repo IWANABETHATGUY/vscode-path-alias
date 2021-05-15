@@ -1,28 +1,24 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import {
-  DefinitionProvider,
-  TextDocument,
-  Position,
   CancellationToken,
-  ProviderResult,
+  DefinitionProvider,
+  Disposable,
   Location,
   LocationLink,
-  Disposable,
-  Uri
+  Position,
+  ProviderResult,
+  TextDocument,
+  Uri,
 } from 'vscode';
 import { AliasStatTree, StatInfo } from '../completion/type';
 import {
-  isObject,
-  mostLikeAlias,
-  normalizePath,
+  getFileAbsolutePath,
   getIndexOfWorkspaceFolder,
-  getFileAbsolutePath
+  mostLikeAlias,
 } from '../util/common';
-import * as path from 'path';
-import * as fs from 'fs';
-import { Nullable } from '../util/types';
 import { traverse } from '../util/traverseSourceFile';
 
-const extensions = ['.js', '.ts', '.jsx', '.tsx', '.vue'];
 export class PathAliasDefinition implements DefinitionProvider {
   private _statMap!: AliasStatTree[];
   private _disposable: Disposable;
@@ -49,7 +45,7 @@ export class PathAliasDefinition implements DefinitionProvider {
     let defination;
     if (index === undefined) return null;
     const textLine = document.lineAt(position.line);
-    const [ , p1, p2] = [...(/\"(.*)\"|\'(.*)\'/g.exec(textLine.text) || [])];
+    const [, p1, p2] = [...(/\"(.*)\"|\'(.*)\'/g.exec(textLine.text) || [])];
     const resPath = p1 || p2;
     const mostLike = mostLikeAlias(
       this._aliasList[index],
@@ -59,49 +55,63 @@ export class PathAliasDefinition implements DefinitionProvider {
     // 如果没有别名，则不处理
     if (!mostLike) return null;
     let statInfo: StatInfo = this._statMap[index][mostLike];
-    let splitPath = resPath
-      .split('/')
-      .slice(1)
-      .filter(Boolean);
+    let splitPath = resPath.split('/').slice(1).filter(Boolean);
     const filePath = path.join(statInfo.absolutePath, ...splitPath);
     fileAbsolutePath = getFileAbsolutePath(filePath);
-    
-    const range = document.getWordRangeAtPosition(position, /\"(.*)\"|\'(.*)\'/);
+
+    const range = document.getWordRangeAtPosition(
+      position,
+      /\"(.*)\"|\'(.*)\'/
+    );
     // 解析ast语法，获得export的位置
     if (!range && fileAbsolutePath) {
-      defination = this.getImportDefination(document, position, fileAbsolutePath);
+      defination = this.getImportDefination(
+        document,
+        position,
+        fileAbsolutePath
+      );
     }
 
     // 跳转到对应文件，对应位置
     if (fileAbsolutePath) {
       return new Location(
-        Uri.file(fileAbsolutePath), 
-        new Position(defination?.position?.line || 0, defination?.position?.character || 0)
+        Uri.file(fileAbsolutePath),
+        new Position(
+          defination?.position?.line || 0,
+          defination?.position?.character || 0
+        )
       );
     }
     return null;
   }
 
   // 解析ast语法，跳转到导出位置
-  private getImportDefination(document: TextDocument, position: Position, fileAbsolutePath: string) {
+  private getImportDefination(
+    document: TextDocument,
+    position: Position,
+    fileAbsolutePath: string
+  ) {
     console.time('ast');
-      const file = fs.readFileSync(fileAbsolutePath, {
-        encoding: 'utf8'
-      });
-      // 用于判断是否是默认导出情况
-      const wordAndBracket = document.getWordRangeAtPosition(position, /\{[\s\S]*\w+[\s\S]*\}/g);
-      const wordRange = document.getWordRangeAtPosition(position, /\w+/g);
-      // 没有找到导出的情况不跳转
-      if (!wordRange && !wordAndBracket) {
-        return null;
-      }
-      const word = !wordAndBracket ? 'default' : document.getText(wordRange);
-      // 这里是已经导入的函数或变量
-      const exportIdentifierList = traverse(fileAbsolutePath, file);
-      const defination = exportIdentifierList.filter(
-        token => token.identifier === word
-      )[0];
-      console.timeEnd('ast');
-      return defination;
+    const file = fs.readFileSync(fileAbsolutePath, {
+      encoding: 'utf8',
+    });
+    // 用于判断是否是默认导出情况
+    const wordAndBracket = document.getWordRangeAtPosition(
+      position,
+      /\{[\s\S]*\w+[\s\S]*\}/g
+    );
+    const wordRange = document.getWordRangeAtPosition(position, /\w+/g);
+    // 没有找到导出的情况不跳转
+    if (!wordRange && !wordAndBracket) {
+      return null;
+    }
+    const word = !wordAndBracket ? 'default' : document.getText(wordRange);
+    // 这里是已经导入的函数或变量
+    const exportIdentifierList = traverse(fileAbsolutePath, file);
+    const defination = exportIdentifierList.filter(
+      (token) => token.identifier === word
+    )[0];
+    console.timeEnd('ast');
+    return defination;
   }
 }
