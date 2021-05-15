@@ -4,7 +4,8 @@ import {
   languages,
   TextDocument,
   window,
-  Uri
+  Uri,
+  WorkspaceFolder
 } from 'vscode';
 import * as fs from 'fs';
 
@@ -28,6 +29,7 @@ import {
   IFunctionSignature,
   getFunctionSignatureFromFiles
 } from './util/getSignatureFromFile';
+import WebpackAliasSearcher from './moduleBundlerAlias/WebpackAliasSearcher';
 
 export const eventBus = new EventEmitter();
 const isWin = process.platform === "win32";
@@ -179,13 +181,16 @@ export class PathAlias {
   }
 
   private initStatInfo() {
+    // 自动搜索webpack配置文件中的alias
+    let was = new WebpackAliasSearcher(workspace.rootPath || '');
+    this._aliasMap[0] = was.getDefaultAlias() || {};
+    
     if (workspace.workspaceFolders && workspace.workspaceFolders.length) {
       this._statMap = workspace.workspaceFolders.map(_ => ({}));
       workspace.workspaceFolders.forEach((ws, index) => {
-        this._aliasMap[index] =
-          workspace.getConfiguration('pathAlias').get('aliasMap') || {};
         this._aliasMap[index] = {
           ...this._aliasMap[index],
+          ...workspace.getConfiguration('pathAlias').get('aliasMap') || {},
           ...getAliasConfig(ws.uri.fsPath || '')
         };
         Object.keys(this._aliasMap[index]).forEach(alias => {
@@ -194,16 +199,6 @@ export class PathAlias {
             ws.uri.fsPath || ''
           );
           let absolutePath = getFileWithExt(realPath) || (existsSync(realPath) && statSync(realPath).isDirectory() && realPath);
-          // if (isLegal && !existsSync(realPath)) {
-          //   console.warn(`${realPath} does not exist`);
-          //   isLegal = false;
-          // } else if (isLegal && !path.isAbsolute(realPath)) {
-          //   console.warn(`${realPath} is not a absolutePath`);
-          //   isLegal = false;
-          // } else if (isLegal && !statSync(realPath).isDirectory()) {
-          //   console.warn(`${realPath} is not a directory`);
-          //   isLegal = false;
-          // }
           if (absolutePath) {
             this._statMap[index][alias] = aliasStatInfo(alias, absolutePath);
           }
