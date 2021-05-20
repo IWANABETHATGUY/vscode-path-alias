@@ -72,16 +72,20 @@ export class PathAliasDefinition implements DefinitionProvider {
 
         if (lastStatInfo) {
           let lastPath = lastStatInfo.children[splitPath[splitPath.length - 1]];
-          if (lastPath) {
-            if (lastPath.type === 'file') {
+          if (lastPath || lastStatInfo.type === 'directory') {
+            if (lastPath && lastPath.type === 'file') {
               return new Location(
                 Uri.file(lastPath.absolutePath),
                 new Position(0, 0)
               );
             } else {
+              // if there is no base string, only dir name
+              if (!lastPath) {
+                lastPath = lastStatInfo
+              }
               const currentFileIndexPath = path.resolve(
                 lastPath.absolutePath,
-                `index.${currentDocumentExt}`
+                `index${currentDocumentExt}`
               );
               const currentFileIndexJsPath = path.resolve(
                 lastPath.absolutePath,
@@ -101,7 +105,7 @@ export class PathAliasDefinition implements DefinitionProvider {
             }
           } else {
             const lastPathDir = lastStatInfo.absolutePath;
-            const lastPathString = splitPath[splitPath.length - 1];
+            const lastPathString = splitPath[splitPath.length - 1] || '';
             const lastPathPrefix = path.resolve(lastPathDir, lastPathString);
             const currentDocumentTypePath = lastPathPrefix + currentDocumentExt;
             const JsTypePath = lastPathPrefix + '.js';
