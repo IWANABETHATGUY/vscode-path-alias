@@ -3,7 +3,6 @@ import * as path from 'path';
 
 import {excludePaths} from './constants';
 import { ModuleBundlerAliasSearcher } from './ModuleBundlerAliasSearcher';
-type webpackConfigPaths = {webpackConfigPath:string, projectDir:string}[];
 import {ConfigPaths, WebpackAlias} from './types';
 /**
  * 自动寻找 webpack alias 算法
@@ -125,7 +124,7 @@ export default class WebpackAliasSearcher extends ModuleBundlerAliasSearcher {
   }
   protected _getConfigsFromFileSearch() {
     let webpackConfigPaths: ConfigPaths = [];
-    for(let [projectDir, { pkg }] of this._projects) {
+    for(let [projectDir] of this._projects) {
       let webpackConfigPath = this._traverseGetModuleBundlerConfigsFromFileSearch(projectDir);
       if (webpackConfigPath.length) {
         webpackConfigPaths.push(...webpackConfigPath.map(t => ({configPath: t, projectDir})));

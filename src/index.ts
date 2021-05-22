@@ -5,7 +5,6 @@ import {
   TextDocument,
   window,
   Uri,
-  WorkspaceFolder
 } from 'vscode';
 import * as fs from 'fs';
 
@@ -30,6 +29,14 @@ import {
   getFunctionSignatureFromFiles
 } from './util/getSignatureFromFile';
 import WebpackAliasSearcher from './moduleBundlerAlias/WebpackAliasSearcher';
+
+const registerLanguages = [
+  { language: 'javascript', scheme: 'file' },
+  { language: 'javascriptreact', scheme: 'file' },
+  { language: 'typescript', scheme: 'file' },
+  { language: 'typescriptreact', scheme: 'file' },
+  { language: 'vue', scheme: 'file' }
+];
 
 export const eventBus = new EventEmitter();
 const isWin = process.platform === "win32";
@@ -162,10 +169,7 @@ export class PathAlias {
     this._signature = new PathAliasSignatureHelpProvider();
     this._ctx.subscriptions.push(
       languages.registerSignatureHelpProvider(
-        [
-          { language: 'javascript', scheme: 'file' },
-          { language: 'vue', scheme: 'file' }
-        ],
+        registerLanguages,
         this._signature,
         ',',
         '('
@@ -211,10 +215,7 @@ export class PathAlias {
     this._codeAction = new PathAliasCodeActionProvider(this._statMap);
     this._ctx.subscriptions.push(
       languages.registerCodeActionsProvider(
-        [
-          { language: 'javascript', scheme: 'file' },
-          { language: 'vue', scheme: 'file' }
-        ],
+        registerLanguages,
         this._codeAction
       )
     );
@@ -224,20 +225,14 @@ export class PathAlias {
     this._importCompletion = new ImportFunctionCompletion();
     this._ctx.subscriptions.push(
       languages.registerCompletionItemProvider(
-        [
-          { language: 'javascript', scheme: 'file' },
-          { language: 'vue', scheme: 'file' }
-        ],
+        registerLanguages,
         this._completion,
         '/',
         ',',
         '{'
       ),
       languages.registerCompletionItemProvider(
-        [
-          { language: 'javascript', scheme: 'file' },
-          { language: 'vue', scheme: 'file' }
-        ],
+        registerLanguages,
         this._importCompletion
       )
     );
@@ -251,10 +246,7 @@ export class PathAlias {
     );
     this._ctx.subscriptions.push(
       languages.registerDefinitionProvider(
-        [
-          { language: 'javascript', scheme: 'file' },
-          { language: 'vue', scheme: 'file' }
-        ],
+        registerLanguages,
         this._definition
       ),
       languages.registerDefinitionProvider(
