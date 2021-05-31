@@ -114,7 +114,7 @@ export class PathAliasCompletion implements CompletionItemProvider {
         );
         if (lastPath) {
           const children = lastPath.children;
-          const retCompletionList = Object.keys(children).map(key => {
+          const retCompletionList = Object.keys(children).map((key) => {
             const curStatInfo = children[key];
             const completionItem = new CompletionItem(key);
             // debugger

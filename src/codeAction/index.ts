@@ -7,12 +7,11 @@ import {
   Disposable,
   CodeAction,
   CodeActionKind,
-  WorkspaceEdit
+  WorkspaceEdit,
 } from 'vscode';
 import { AliasStatTree } from '../completion/type';
 import { resolve, dirname } from 'path';
 import { getIndexOfWorkspaceFolder } from '../util/common';
-
 export class PathAliasCodeActionProvider implements CodeActionProvider {
   private _disposable: Disposable;
   private _statMap!: AliasStatTree[];
@@ -50,10 +49,9 @@ export class PathAliasCodeActionProvider implements CodeActionProvider {
           Object.entries(this._statMap[index]).forEach(([alias, stat]) => {
             const alias2AbsolutePath = stat['absolutePath'];
             if (absolutePath.startsWith(alias2AbsolutePath)) {
-              const insertPath = absolutePath.replace(
-                alias2AbsolutePath,
-                alias
-              );
+              const insertPath = absolutePath
+                .replace(alias2AbsolutePath, alias)
+                .replace(/\\/g, '/');
               const action = new CodeAction(insertPath);
               action.kind = CodeActionKind.Refactor;
               action.edit = new WorkspaceEdit();
