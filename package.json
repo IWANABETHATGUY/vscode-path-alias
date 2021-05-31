@@ -1,49 +1,56 @@
 {
-  "name": "path-alias",
-  "displayName": "path-alias",
-  "description": "一个可以解决路径别名提示，跳转的vscode插件",
-  "version": "0.12.2",
-  "publisher": "IWANABETHATGUY",
-  "engines": {
-    "vscode": "^1.30.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [
-    "onLanguage:javascript",
-    "onLanguage:vue"
-  ],
-  "main": "./out/extension",
-  "readme": "https://github.com/IWANABETHATGUY/vscode-path-alias/blob/master/README.md",
-  "contributes": {
-    "configuration": {
-      "title": "pathAlias",
-      "properties": {
-        "pathAlias.aliasMap": {
-          "type": "object",
-          "description": "在这个对象中定制path-alias的规则,你可以使用${cwd}代表当前工作目录的绝对路径"
-        },
-        "pathAlias.needExtension": {
-          "type": "boolean",
-          "default": true,
-          "description": "是否需要补全文件的扩展名"
-        },
-        "pathAlias.ignoreExtensionList": {
-          "type": "array",
-          "default": [
-            "js",
-            "ts",
-            "tsx",
-            "jsx",
-            "vue"
-          ],
-          "description": "当开启忽略扩展名模式时，忽略的扩展名列表"
-        },
-        "pathAlias.autoSuggestion": {
-          "type": "boolean",
-          "default": true,
-          "description": "是否在开启接受提示后自动触发补全"
+    "name": "path-alias",
+    "displayName": "path-alias",
+    "description": "一个可以解决路径别名提示，跳转的vscode插件",
+    "version": "0.12.3",
+    "publisher": "IWANABETHATGUY",
+    "engines": {
+        "vscode": "^1.30.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "*"
+    ],
+    "main": "./out/extension",
+    "readme": "https://github.com/IWANABETHATGUY/vscode-path-alias/blob/master/README.md",
+    "contributes": {
+        "commands": [
+            {
+                "command": "extension.sayHello",
+                "title": "Hello World"
+            }
+        ],
+        "configuration": {
+            "title": "pathAlias",
+            "properties": {
+                "pathAlias.aliasMap": {
+                    "type": "object",
+                    "description": "在这个对象中定制path-alias的规则,你可以使用${cwd}代表当前工作目录的绝对路径"
+                },
+                "pathAlias.needExtension": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "是否需要补全文件的扩展名"
+                },
+                "pathAlias.ignoreExtensionList": {
+                    "type": "array",
+                    "default": [
+                        "js",
+                        "ts",
+                        "tsx",
+                        "jsx",
+                        "vue"
+                    ],
+                    "description": "当开启忽略扩展名模式时，忽略的扩展名列表"
+                },
+                "pathAlias.autoSuggestion": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "是否在开启接受提示后自动触发补全"
+                }
+            }
         }
       }
     }

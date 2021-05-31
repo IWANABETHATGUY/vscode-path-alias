@@ -4,7 +4,7 @@ import {
   languages,
   TextDocument,
   window,
-  Uri
+  Uri,
 } from 'vscode';
 import * as fs from 'fs';
 
@@ -15,7 +15,7 @@ import { AliasMap, StatInfo, AliasStatTree } from './completion/type';
 import { existsSync, statSync, readdirSync } from 'fs';
 import * as path from 'path';
 import { EventEmitter } from 'events';
-import { debounce, mostLikeAlias, normalizePath } from './util/common';
+import { debounce, mostLikeAlias, normalizePath, getFileWithExt } from './util/common';
 import { generateWatcher } from './util/watcher';
 import { PathAliasCodeActionProvider } from './codeAction';
 import { getAliasConfig } from './util/config';
@@ -28,6 +28,15 @@ import {
   IFunctionSignature,
   getFunctionSignatureFromFiles
 } from './util/getSignatureFromFile';
+import WebpackAliasSearcher from './moduleBundlerAlias/WebpackAliasSearcher';
+
+const registerLanguages = [
+  { language: 'javascript', scheme: 'file' },
+  { language: 'javascriptreact', scheme: 'file' },
+  { language: 'typescript', scheme: 'file' },
+  { language: 'typescriptreact', scheme: 'file' },
+  { language: 'vue', scheme: 'file' }
+];
 
 export const eventBus = new EventEmitter();
 const isWin = process.platform === "win32";
@@ -160,10 +169,7 @@ export class PathAlias {
     this._signature = new PathAliasSignatureHelpProvider();
     this._ctx.subscriptions.push(
       languages.registerSignatureHelpProvider(
-        [
-          { language: 'javascript', scheme: 'file' },
-          { language: 'vue', scheme: 'file' }
-        ],
+        registerLanguages,
         this._signature,
         ',',
         '('
@@ -179,13 +185,16 @@ export class PathAlias {
   }
 
   private initStatInfo() {
+    // 自动搜索webpack配置文件中的alias
+    let was = new WebpackAliasSearcher(workspace.rootPath || '');
+    this._aliasMap[0] = was.getDefaultAlias() || {};
+    
     if (workspace.workspaceFolders && workspace.workspaceFolders.length) {
       this._statMap = workspace.workspaceFolders.map(_ => ({}));
       workspace.workspaceFolders.forEach((ws, index) => {
-        this._aliasMap[index] =
-          workspace.getConfiguration('pathAlias').get('aliasMap') || {};
         this._aliasMap[index] = {
           ...this._aliasMap[index],
+          ...workspace.getConfiguration('pathAlias').get('aliasMap') || {},
           ...getAliasConfig(ws.uri.fsPath || '')
         };
         Object.keys(this._aliasMap[index]).forEach(alias => {
@@ -193,19 +202,9 @@ export class PathAlias {
             '${cwd}',
             ws.uri.fsPath || ''
           );
-          let isLegal = true;
-          if (isLegal && !existsSync(realPath)) {
-            console.warn(`${realPath} does not exist`);
-            isLegal = false;
-          } else if (isLegal && !path.isAbsolute(realPath)) {
-            console.warn(`${realPath} is not a absolutePath`);
-            isLegal = false;
-          } else if (isLegal && !statSync(realPath).isDirectory()) {
-            console.warn(`${realPath} is not a directory`);
-            isLegal = false;
-          }
-          if (isLegal) {
-            this._statMap[index][alias] = aliasStatInfo(alias, realPath);
+          let absolutePath = getFileWithExt(realPath) || (existsSync(realPath) && statSync(realPath).isDirectory() && realPath);
+          if (absolutePath) {
+            this._statMap[index][alias] = aliasStatInfo(alias, absolutePath);
           }
         });
         this._aliasList[index] = Object.keys(this._aliasMap[index]).sort();
@@ -216,10 +215,7 @@ export class PathAlias {
     this._codeAction = new PathAliasCodeActionProvider(this._statMap);
     this._ctx.subscriptions.push(
       languages.registerCodeActionsProvider(
-        [
-          { language: 'javascript', scheme: 'file' },
-          { language: 'vue', scheme: 'file' }
-        ],
+        registerLanguages,
         this._codeAction
       )
     );
@@ -229,20 +225,14 @@ export class PathAlias {
     this._importCompletion = new ImportFunctionCompletion();
     this._ctx.subscriptions.push(
       languages.registerCompletionItemProvider(
-        [
-          { language: 'javascript', scheme: 'file' },
-          { language: 'vue', scheme: 'file' }
-        ],
+        registerLanguages,
         this._completion,
         '/',
         ',',
         '{'
       ),
       languages.registerCompletionItemProvider(
-        [
-          { language: 'javascript', scheme: 'file' },
-          { language: 'vue', scheme: 'file' }
-        ],
+        registerLanguages,
         this._importCompletion
       )
     );
@@ -256,10 +246,7 @@ export class PathAlias {
     );
     this._ctx.subscriptions.push(
       languages.registerDefinitionProvider(
-        [
-          { language: 'javascript', scheme: 'file' },
-          { language: 'vue', scheme: 'file' }
-        ],
+        registerLanguages,
         this._definition
       ),
       languages.registerDefinitionProvider(
@@ -271,9 +258,23 @@ export class PathAlias {
 }
 
 function aliasStatInfo(alias: string, realPath: string): StatInfo {
-  if (isWin) {
-    realPath = realPath.replace(/\//g, '\\')
+  if (fs.existsSync(realPath) && fs.statSync(realPath).isFile()) {
+    return aliasStatInfoFile(alias, realPath);
   }
+  return aliasStatInfoDir(alias, realPath);
+}
+
+function aliasStatInfoFile(alias: string, realPath: string): StatInfo {
+  const stat: StatInfo = {
+    name: alias,
+    type: 'file',
+    absolutePath: realPath,
+    children: Object.create(null)
+  };
+  return stat;
+}
+
+function aliasStatInfoDir(alias: string, realPath: string): StatInfo {
   const stat: StatInfo = {
     name: alias,
     type: 'directory',
