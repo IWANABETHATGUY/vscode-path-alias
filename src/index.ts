@@ -258,7 +258,6 @@ export class PathAlias {
 }
 
 function aliasStatInfo(alias: string, realPath: string): StatInfo {
-<<<<<<< HEAD
   if (fs.existsSync(realPath) && fs.statSync(realPath).isFile()) {
     return aliasStatInfoFile(alias, realPath);
   }
@@ -276,11 +275,6 @@ function aliasStatInfoFile(alias: string, realPath: string): StatInfo {
 }
 
 function aliasStatInfoDir(alias: string, realPath: string): StatInfo {
-=======
-  if (isWin) {
-    realPath = realPath.replace(/\//g, '\\')
-  }
->>>>>>> author/master
   const stat: StatInfo = {
     name: alias,
     type: 'directory',
