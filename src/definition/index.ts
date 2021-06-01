@@ -7,14 +7,14 @@ import {
   Location,
   LocationLink,
   Disposable,
-  Uri
+  Uri,
 } from 'vscode';
 import { AliasStatTree, StatInfo } from '../completion/type';
 import {
   isObject,
   mostLikeAlias,
   normalizePath,
-  getIndexOfWorkspaceFolder
+  getIndexOfWorkspaceFolder,
 } from '../util/common';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -55,10 +55,7 @@ export class PathAliasDefinition implements DefinitionProvider {
 
       if (mostLike) {
         let statInfo: StatInfo = this._statMap[index][mostLike];
-        let splitPath = resPath
-          .split('/')
-          .slice(1)
-          .filter(Boolean);
+        let splitPath = resPath.split('/').slice(1).filter(Boolean);
         const lastStatInfo = splitPath
           .slice(0, -1)
           .reduce((pre: Nullable<StatInfo>, cur) => {
@@ -78,29 +75,42 @@ export class PathAliasDefinition implements DefinitionProvider {
                 Uri.file(lastPath.absolutePath),
                 new Position(0, 0)
               );
-            } else {
-              // if there is no base string, only dir name
-              if (!lastPath) {
+            }  {
+              // if path has no base string, only dir name
+              if (lastPath && lastPath.type === 'directory') {
+                let extensionList = [`${currentDocumentExt}`, '.js'];
+                for (let i = 0; i < extensionList.length; i++) {
+                  const extension = extensionList[i];
+                  const tryAddIndexFileToPath = path.resolve(
+                    lastPath.absolutePath,
+                    `index${extension}`
+                  );
+                  if (fs.existsSync(tryAddIndexFileToPath)) {
+                    return new Location(
+                      Uri.file(tryAddIndexFileToPath),
+                      new Position(0, 0)
+                    );
+                  }
+                }
+                
+              } else {
                 lastPath = lastStatInfo
-              }
-              const currentFileIndexPath = path.resolve(
-                lastPath.absolutePath,
-                `index${currentDocumentExt}`
-              );
-              const currentFileIndexJsPath = path.resolve(
-                lastPath.absolutePath,
-                `index.js`
-              );
-              if (fs.existsSync(currentFileIndexPath)) {
-                return new Location(
-                  Uri.file(currentFileIndexPath),
-                  new Position(0, 0)
-                );
-              } else if (fs.existsSync(currentFileIndexJsPath)) {
-                return new Location(
-                  Uri.file(currentFileIndexJsPath),
-                  new Position(0, 0)
-                );
+                // here the absolute path has base string, try to add extension
+                const basename = path.basename(resPath);
+                let extensionList = [`${currentDocumentExt}`, '.js'];
+                for (let i = 0; i < extensionList.length; i++) {
+                  const extension = extensionList[i];
+                  const tryAddIndexFileToPath = path.resolve(
+                    lastPath.absolutePath,
+                    `${basename}${extension}`
+                  );
+                  if (fs.existsSync(tryAddIndexFileToPath)) {
+                    return new Location(
+                      Uri.file(tryAddIndexFileToPath),
+                      new Position(0, 0)
+                    );
+                  }
+                }
               }
             }
           } else {
@@ -122,12 +132,12 @@ export class PathAliasDefinition implements DefinitionProvider {
         }
       }
     } else {
-      return this.importDefination(document, position);
+      return this.importDefinition(document, position);
     }
     return null;
   }
 
-  private importDefination(document: TextDocument, position: Position) {
+  private importDefinition(document: TextDocument, position: Position) {
     const importReg = /(import\s*){([^{}]*)}\s*from\s*(?:('(?:.*)'|"(?:.*)"))/g;
     const content = document.getText();
     const zeroBasedPosition = document.offsetAt(position);
@@ -163,7 +173,7 @@ export class PathAliasDefinition implements DefinitionProvider {
       if (mostLike) {
         const pathList = [
           this._statMap[wsIndex][mostLike]['absolutePath'],
-          ...pathAlias.split('/').slice(1)
+          ...pathAlias.split('/').slice(1),
         ];
         let absolutePath = path.join(...pathList);
         let extname = path.extname(absolutePath);
@@ -181,20 +191,20 @@ export class PathAliasDefinition implements DefinitionProvider {
           console.time('ast');
           const absolutePathWithExtname = absolutePath + '.' + extname;
           const file = fs.readFileSync(absolutePathWithExtname, {
-            encoding: 'utf8'
+            encoding: 'utf8',
           });
           // 这里是已经导入的函数或变量
           const exportIdentifierList = traverse(absolutePathWithExtname, file);
-          const retDefination = exportIdentifierList.filter(
-            token => token.identifier === word
+          const retDefinition = exportIdentifierList.filter(
+            (token) => token.identifier === word
           )[0];
           console.timeEnd('ast');
-          if (retDefination) {
+          if (retDefinition) {
             return new Location(
               Uri.file(absolutePathWithExtname),
               new Position(
-                retDefination.position.line,
-                retDefination.position.character
+                retDefinition.position.line,
+                retDefinition.position.character
               )
             );
           }
