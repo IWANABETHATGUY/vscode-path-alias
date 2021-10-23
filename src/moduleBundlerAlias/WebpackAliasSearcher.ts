@@ -77,10 +77,14 @@ export default class WebpackAliasSearcher extends ModuleBundlerAliasSearcher {
         process.cwd = () => projectDir;
         process.env.NODE_ENV = process.env.NODE_ENV || 'development';
         const webpackConfig = require(webpackConfigPath);
-        if (webpackConfig) {
-          webpackConfigs.push(webpackConfig);
+        if (typeof webpackConfig === 'function') {
+          const cnt = webpackConfig();
+          webpackConfigs.push(cnt);
+        } else if(webpackConfig) {
+          webpackConfig.push(webpackConfig);
         }
       } catch (error) {
+        console.log(error);
       }
     }
     return webpackConfigs;
