@@ -81,7 +81,7 @@ export default class WebpackAliasSearcher extends ModuleBundlerAliasSearcher {
           const cnt = webpackConfig();
           webpackConfigs.push(cnt);
         } else if(webpackConfig) {
-          webpackConfig.push(webpackConfig);
+          webpackConfigs.push(webpackConfig);
         }
       } catch (error) {
         console.log(error);
